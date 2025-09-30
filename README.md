@@ -1,5 +1,6 @@
 # natation
 
+<<<<<<< HEAD
 ## Liste des pages de l'application 
 
 ### Listing de programmes
@@ -31,3 +32,8 @@ RuningScreen            running.dart
 ### Résultat de la course
 ResultRace              result-race.dart
 
+=======
+A new Flutter project.
+
+Groupe BAY : Marelle Yaniss, Forest Benjamin, Robert Adrien
+>>>>>>> 222c7c0 (Commit readme)
