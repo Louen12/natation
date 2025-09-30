@@ -1,9 +1,10 @@
 class Thresholds {
   final double down;
   final double up;
+
   const Thresholds({required this.down, required this.up});
 
-  static const pushUps = Thresholds(down: -1.2, up: 0.8);
+  // Valeurs par défaut pour tractions (à ajuster si besoin)
   static const pullUps = Thresholds(down: -0.8, up: 1.2);
 
   Thresholds copyWith({double? down, double? up}) =>
