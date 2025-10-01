@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:natation/models/exercise.dart';
 
-class ExerciceWidget extends StatelessWidget {
-  final String exercice;
+class ExerciseWidget extends StatelessWidget {
+  final Exercise exercise;
   final bool action;
-  const ExerciceWidget({super.key,
-    required this.exercice,
+  const ExerciseWidget({super.key,
+    required this.exercise,
     required this.action,
 });
 
@@ -17,7 +18,7 @@ class ExerciceWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            exercice,
+            '${exercise.reps} x ${exercise.steps} ${exercise.name}',
             style: DefaultTextStyle.of(context)
                 .style
                 .apply(fontSizeFactor: 1.3),
