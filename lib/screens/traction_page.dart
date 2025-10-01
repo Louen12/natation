@@ -11,14 +11,21 @@ import '../widgets/tjtq_card.dart';
 enum Phase { idle, descent, bottom, ascent }
 
 class TractionPage extends StatefulWidget {
-  const TractionPage({super.key});
+  final TractionPlan plan;
+  const TractionPage({super.key, required this.plan});
   @override
   State<TractionPage> createState() => _TractionPageState();
 }
 
 class _TractionPageState extends State<TractionPage> {
   // Plan d’entraînement (démo)
-  static const TractionPlan plan = TractionPlan.defaultPlan;
+  late TractionPlan plan;
+
+  @override
+  void initState() {
+    super.initState();
+    plan = widget.plan;
+  }
 
   // Etat courant de la séance
   int currentSet = 1;        // série en cours (1-based)

@@ -9,11 +9,4 @@ class TractionPlan {
     required this.repsPerSet,
     required this.restSeconds,
   });
-
-  /// TESTS
-  static const TractionPlan defaultPlan = TractionPlan(
-    sets: 3,
-    repsPerSet: 8,
-    restSeconds: 90,
-  );
 }

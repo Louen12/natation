@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'screens/traction_page.dart';
+import 'models/traction.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Création plan personnalisé
+  const customPlan = TractionPlan(
+    sets: 4,
+    repsPerSet: 10,
+    restSeconds: 20,
+  );
+
+  runApp(MyApp(plan: customPlan));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final TractionPlan plan;
+
+  const MyApp({super.key, required this.plan});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: TractionPage(),
+      home: TractionPage(plan: plan),
     );
   }
 }
