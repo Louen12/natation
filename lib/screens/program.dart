@@ -48,7 +48,9 @@ class _ProgramPageState extends State<ProgramPage> {
               return ExercisePill(
                 title: ex.name,
                 onTap: () {
-                  Navigator.of(context).pushNamed(ex.name, arguments: ex);
+                  Navigator.of(
+                    context,
+                  ).pushNamed("/${(ex.name).toLowerCase()}", arguments: ex);
                 },
               );
             },
