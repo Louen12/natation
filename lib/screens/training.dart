@@ -16,6 +16,13 @@ class TrainingListScreen extends StatelessWidget {
     final sets = session == null ? <TrainingSet>[] : _flattenSession(session);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Programme d\'entraînement'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           color: Color(0xFFE5C7B6),
@@ -229,7 +236,7 @@ class _ExerciseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = '${set.repetitions} x ${set.distance}m ${set.stroke.label}' + (set.intensity != null ? ' • ${set.intensity}' : '');
+    final label = '${set.repetitions} x ${set.distance}m ${set.stroke.label}${set.intensity != null ? ' • ${set.intensity}' : ''}';
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
