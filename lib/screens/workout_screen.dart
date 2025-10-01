@@ -4,81 +4,94 @@ import 'package:flutter/material.dart';
 import '../models/workout.dart';
 import '../services/sensor_service.dart';
 
-/// États du cycle d'une répétition
-enum Phase { idle, goingDown, bottom, goingUp }
+/// Phases du cycle (1 rep = descent -> bottom -> ascent validée)
+enum Phase { idle, descent, bottom, ascent }
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
-
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  // === Plan FIXE (non modifiable dans l'UI) ================================
+  // ---- Plan fixe (modifie dans models/workout.dart si besoin) -------------
   static const WorkoutPlan plan = WorkoutPlan.defaultPlan;
 
-  // === État de la session ==================================================
+  // ---- État séance --------------------------------------------------------
   int currentSet = 1;
   int currentReps = 0;
   bool inRest = false;
   int restRemaining = 0;
 
-  // === Capteur & comptage ==================================================
-  final _sensor = SensorService(alpha: 0.9);
-  StreamSubscription<double>? _sensorSub;
+  // ---- Capteur & détection ------------------------------------------------
+  final _sensor = SensorService(alphaGravity: 0.96, alphaSmooth: 0.92);
+  StreamSubscription<double>? _sub;
+
+  // Signal vertical lissé (pour debug)
+  double val = 0.0;
+  double prev = 0.0;
+
+  // FSM
   Phase _phase = Phase.idle;
-  double value = 0; // magnitude filtrée affichée pour debug
+  DateTime _phaseStart = DateTime.now();
 
-  // Seuils ADAPTATIFS (calculés à la calibration)
-  double _downThresh = 0.0;
-  double _upThresh = 0.0;
+  // Calibration / seuils adaptatifs
+  double base = 0.0;         // baseline dynamique (milieu min/max)
+  double ampThresh = 1.0;    // amplitude minimale pour valider une rep
+  double slopeEps  = 0.1;    // pente minimale (hystérésis sur le sens)
+  double downGate  = -0.6;   // porte "descente": sous base + gate -> descent
+  double upGate    =  0.6;   // porte "montée": au-dessus de base + gate -> ascent
 
-  // Anti double-comptage
-  static const Duration _minDelayBetweenReps = Duration(milliseconds: 900);
-  DateTime _lastRep = DateTime.fromMillisecondsSinceEpoch(0);
+  // Mémoire min/max dans un cycle
+  double minInDescent = 0.0;
+  double maxInAscent  = 0.0;
 
-  // Anti-bounce autour du bas
-  static const Duration _minBottomHold = Duration(milliseconds: 120);
+  // Anti-doublons / garde-fous
+  static const minBottomHold = Duration(milliseconds: 140);
+  static const refractory    = Duration(milliseconds: 1200); // délai entre 2 reps
+  static const maxPhaseMs    = 2500;                         // max par phase
   DateTime _bottomAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime _lastRep  = DateTime.fromMillisecondsSinceEpoch(0);
 
-  // Timer de repos
+  // Timer repos
   Timer? _restTimer;
 
   @override
   void dispose() {
-    _sensorSub?.cancel();
+    _sub?.cancel();
     _restTimer?.cancel();
     super.dispose();
   }
 
-  // ---------------------- Calibration ------------------------------------
-  /// Calibre automatiquement les seuils à partir de 1s immobile.
-  /// On mesure μ et σ de la magnitude filtrée au repos,
-  /// puis: down = μ - kσ, up = μ + kσ
+  // --------------------------- Calibration -------------------------------
+  /// 1.2s immobile → moyenne & écart-type du signal vertical.
+  /// On déduit les seuils : portes up/down, pente min, amplitude min.
   Future<void> _calibrate() async {
     final samples = <double>[];
-    final sub = _sensor.magnitudeStream.listen(samples.add);
-    await Future<void>.delayed(const Duration(milliseconds: 1000));
+    final sub = _sensor.verticalStream().listen(samples.add);
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
     await sub.cancel();
-
     if (samples.isEmpty) return;
+
     final mu = samples.reduce((a, b) => a + b) / samples.length;
-    final varSum = samples.fold<double>(0.0, (s, v) => s + math.pow(v - mu, 2));
+    final varSum = samples.fold<double>(0.0, (s, v) => s + (v - mu) * (v - mu));
     final sigma = math.sqrt(varSum / samples.length);
 
-    const k = 2.0; // plus grand => seuils plus exigeants
-    _downThresh = mu - k * sigma;
-    _upThresh = mu + k * sigma;
+    base = mu;
 
-    // garde-fous (la magnitude est souvent autour de ~0 au repos sur userAccelerometer)
-    // On impose un min d'écart pour éviter d'être trop sensible.
-    final minGap = 0.15; // en g approximatif (acc units)
-    if ((_upThresh - mu) < minGap) _upThresh = mu + minGap;
-    if ((mu - _downThresh) < minGap) _downThresh = mu - minGap;
+    // Portes (hystérésis de franchissement) — plus sigma est gros, plus on exige
+    final gate = math.max(0.45, sigma * 2.5);
+    downGate = -gate;
+    upGate   =  gate;
+
+    // Amplitude minimale (écart min entre min et max d'un cycle)
+    ampThresh = math.max(1.2, sigma * 4.0);
+
+    // Pente minimale pour considérer un vrai changement de sens
+    slopeEps = math.max(0.10, sigma * 0.8);
   }
 
-  // ---------------------- Contrôles séance --------------------------------
+  // --------------------------- Contrôles séance --------------------------
   void _startWorkout() async {
     setState(() {
       currentSet = 1;
@@ -86,80 +99,121 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       inRest = false;
       restRemaining = 0;
       _phase = Phase.idle;
+      _phaseStart = DateTime.now();
     });
 
-    // Calibration (téléphone immobile 1 seconde)
+    // IMPORTANT: immobile ~1s après "Démarrer" (calibration)
     await _calibrate();
-
     _startSensor();
   }
 
   void _startSensor() {
-    _sensorSub?.cancel();
+    _sub?.cancel();
     _phase = Phase.idle;
-    _sensorSub = _sensor.magnitudeStream.listen((v) {
-      value = v;
-      if (inRest) return; // on ignore pendant le repos
+    _phaseStart = DateTime.now();
+    minInDescent = 0; maxInAscent = 0;
+
+    _sub = _sensor.verticalStream().listen((v) {
+      val = v;
+
+      if (inRest) return;
+
+      // Baseline adaptative lente (suivre dérive éventuelle)
+      base = base * 0.995 + val * 0.005;
+
+      // Signe / pente
+      final slope = val - prev;
+      prev = val;
+
+      final now = DateTime.now();
+      final dtMs = now.difference(_phaseStart).inMilliseconds;
 
       switch (_phase) {
         case Phase.idle:
-        // Descente détectée ssi on passe SOUS le seuil "down"
-          if (value < _downThresh) _phase = Phase.goingDown;
+        // Démarrage descente: on franchit base + porte "bas" avec pente négative
+          if ((val - base) < downGate && slope < -slopeEps) {
+            _phase = Phase.descent;
+            _phaseStart = now;
+            minInDescent = val;
+          }
           break;
 
-        case Phase.goingDown:
-        // On a atteint le bas quand on remonte AU-DESSUS de down
-          if (value >= _downThresh) {
+        case Phase.descent:
+        // On mémorise le minimum local
+          if (val < minInDescent) minInDescent = val;
+
+          // Changement de sens vers la montée -> on marque le bas
+          if (slope > slopeEps) {
             _phase = Phase.bottom;
-            _bottomAt = DateTime.now();
+            _phaseStart = now;
+            _bottomAt = now;
           }
+
+          if (dtMs > maxPhaseMs) { _resetToIdle(now); }
           break;
 
         case Phase.bottom:
-        // Petite pause anti-rebond, puis on attend la remontée franchissant "up"
-          if (DateTime.now().difference(_bottomAt) >= _minBottomHold &&
-              value > _upThresh) {
-            _phase = Phase.goingUp;
+        // Petite tenue au bas + franchissement de la porte haute
+          if (now.difference(_bottomAt) >= minBottomHold &&
+              (val - base) > upGate &&
+              slope > slopeEps) {
+            _phase = Phase.ascent;
+            _phaseStart = now;
+            maxInAscent = val;
           }
+
+          if (dtMs > maxPhaseMs) { _resetToIdle(now); }
           break;
 
-        case Phase.goingUp:
-        // Fin de montée lorsqu'on retombe sous up -> fin de cycle
-          if (value <= _upThresh) {
-            final now = DateTime.now();
-            final okDelay = now.difference(_lastRep) >= _minDelayBetweenReps;
+        case Phase.ascent:
+        // On mémorise le maximum local
+          if (val > maxInAscent) maxInAscent = val;
 
-            _phase = Phase.idle; // on réarme toujours le cycle
+          // Fin de la montée: la pente redevient négative (on a passé le sommet)
+          if (slope < -slopeEps) {
+            final amp = (maxInAscent - minInDescent).abs();
+            final refractoryOk = now.difference(_lastRep) >= refractory;
 
-            if (okDelay) {
+            if (amp >= ampThresh && refractoryOk) {
               _lastRep = now;
               setState(() => currentReps++);
-              if (currentReps >= plan.repsPerSet) _onSetFinished();
+
+              // Adaptation douce: on ajuste l'amplitude cible et la base
+              ampThresh = 0.7 * ampThresh + 0.3 * amp;
+              base = base * 0.9 + ((minInDescent + maxInAscent) / 2.0) * 0.1;
+
+              if (currentReps >= plan.repsPerSet) { _onSetFinished(); return; }
             }
+
+            _resetToIdle(now); // quel que soit le cas, on réarme
           }
+
+          if (dtMs > maxPhaseMs) { _resetToIdle(now); }
           break;
       }
 
-      // rafraîchit l'affichage (debug)
+      // (debug UI)
       setState(() {});
     });
   }
 
+  void _resetToIdle(DateTime now) {
+    _phase = Phase.idle;
+    _phaseStart = now;
+    minInDescent = 0; maxInAscent = 0;
+  }
+
   void _onSetFinished() {
-    _sensorSub?.cancel();
+    _sub?.cancel();
     if (currentSet >= plan.sets) {
-      // Fin de l'entraînement
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Bravo'),
+          title: const Text('🎉 Bravo'),
           content: const Text('Tu as terminé toutes les séries !'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _stopWorkout();
-              },
+              onPressed: () { Navigator.pop(context); _stopWorkout(); },
               child: const Text('OK'),
             ),
           ],
@@ -175,16 +229,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       inRest = true;
       restRemaining = plan.restSeconds;
     });
+    _sub?.cancel();
 
-    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       setState(() => restRemaining--);
       if (restRemaining <= 0) {
-        timer.cancel();
+        t.cancel();
         setState(() {
           inRest = false;
           currentSet++;
           currentReps = 0;
           _phase = Phase.idle;
+          _phaseStart = DateTime.now();
         });
         _startSensor();
       }
@@ -192,7 +248,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   void _stopWorkout() {
-    _sensorSub?.cancel();
+    _sub?.cancel();
     _restTimer?.cancel();
     setState(() {
       currentSet = 1;
@@ -200,14 +256,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       inRest = false;
       restRemaining = 0;
       _phase = Phase.idle;
+      _phaseStart = DateTime.now();
     });
   }
 
-  // --------------------------- UI -----------------------------------------
+  // ----------------------------- UI ---------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tractions - Séries')),
+      appBar: AppBar(title: const Text('Tractions')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -225,9 +282,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Astuce: poche poitrine / brassard. Rester immobile 1s après "Démarrer" (calibration).',
-                      style: TextStyle(fontSize: 12),
+                      'Conseil: Mettez votre téléphone dans votre poche. '
+                          ' Après "Démarrer", restez immobile ~1s pour la calibration.',
                       textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
@@ -263,11 +321,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
             if (inRest) ...[
               const Text('Repos', textAlign: TextAlign.center),
-              Text(
-                '$restRemaining s',
-                style: Theme.of(context).textTheme.displayMedium,
-                textAlign: TextAlign.center,
-              ),
+              Text('$restRemaining s',
+                  style: Theme.of(context).textTheme.displayMedium,
+                  textAlign: TextAlign.center),
               const SizedBox(height: 6),
               LinearProgressIndicator(
                 value: plan.restSeconds == 0
@@ -282,10 +338,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              // Debug utile pour régler si besoin
+              // ✨ Debug pour réglages rapides (supprimable)
               Text(
-                'Phase: $_phase • value: ${value.toStringAsFixed(3)}\n'
-                    'down=${_downThresh.toStringAsFixed(3)} • up=${_upThresh.toStringAsFixed(3)}',
+                'phase=$_phase  val=${val.toStringAsFixed(2)}  base=${base.toStringAsFixed(2)}\n'
+                    'gates: down=${downGate.toStringAsFixed(2)}  up=${upGate.toStringAsFixed(2)}  '
+                    'ampMin=${ampThresh.toStringAsFixed(2)}  slope>${slopeEps.toStringAsFixed(2)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 12),
               ),

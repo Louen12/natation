@@ -1,27 +1,71 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:sensors_plus/sensors_plus.dart';
 
-/// Service capteur.
-/// On prend l'accélération SANS gravité (userAccelerometer)
-/// puis on calcule la MAGNITUDE (√(x²+y²+z²)) pour être insensible à l'orientation.
-/// On applique ensuite filtre passe-bas (exponential moving average).
+/// Service capteur robuste.
+/// 1) Low-pass sur l'accéléromètre pour estimer l'axe gravité (g).
+/// 2) Projection de l'accélération utilisateur sur g -> "vertical".
+/// 3) Lissage EMA du signal projeté.
 class SensorService {
-  final double _alpha; // proche de 1.0 => plus lisse
-  double _lp = 0.0;
-  bool _init = false;
+  final double alphaGravity; // 0.90–0.98 (plus haut = plus lisse)
+  final double alphaSmooth;  // 0.80–0.95 (plus haut = plus lisse)
 
-  SensorService({double alpha = 0.9}) : _alpha = alpha;
+  SensorService({this.alphaGravity = 0.95, this.alphaSmooth = 0.90});
 
-  /// Flux de magnitude filtrée.
-  Stream<double> get magnitudeStream =>
-      userAccelerometerEventStream().map((e) {
-        final mag = math.sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
-        if (!_init) {
-          _init = true;
-          _lp = mag;
-          return _lp;
+  /// Flux de l’accélération VERTICALE lissée (≈ m/s²).
+  /// Signe: positif ≈ vers le bas, négatif ≈ vers le haut.
+  Stream<double> verticalStream() {
+    final ctrl = StreamController<double>();
+
+    // Estimation de la gravité (LPF sur accelerometer)
+    double gx = 0, gy = 0, gz = 9.81;
+    bool gInit = false;
+
+    // Lissage final du signal projeté
+    double vSmooth = 0;
+    bool vInit = false;
+
+    StreamSubscription<AccelerometerEvent>? accSub;
+    StreamSubscription<UserAccelerometerEvent>? userSub;
+
+    void onListen() {
+      accSub = accelerometerEventStream().listen((e) {
+        if (!gInit) {
+          gx = e.x; gy = e.y; gz = e.z; gInit = true;
+        } else {
+          gx = gx * alphaGravity + e.x * (1 - alphaGravity);
+          gy = gy * alphaGravity + e.y * (1 - alphaGravity);
+          gz = gz * alphaGravity + e.z * (1 - alphaGravity);
         }
-        _lp = _lp * _alpha + mag * (1 - _alpha);
-        return _lp;
       });
+
+      userSub = userAccelerometerEventStream().listen((e) {
+        final norm = math.sqrt(gx*gx + gy*gy + gz*gz);
+        if (norm < 1e-6) return;
+
+        // Axe unitaire vertical (≈ direction de la gravité)
+        final ux = gx / norm, uy = gy / norm, uz = gz / norm;
+
+        // Projection de l'accélération utilisateur sur l'axe vertical
+        final vertical = e.x * ux + e.y * uy + e.z * uz;
+
+        // Lissage EMA
+        if (!vInit) { vSmooth = vertical; vInit = true; }
+        else { vSmooth = vSmooth * alphaSmooth + vertical * (1 - alphaSmooth); }
+
+        ctrl.add(vSmooth);
+      });
+    }
+
+    Future<void> onCancel() async {
+      await accSub?.cancel();
+      await userSub?.cancel();
+    }
+
+    ctrl.onListen = onListen;
+    ctrl.onPause  = onCancel;
+    ctrl.onCancel = onCancel;
+
+    return ctrl.stream;
+  }
 }
