@@ -336,6 +336,7 @@ class _TractionPageState extends State<TractionPage> {
                 series: currentSet,
                 totalRepetitions: plan.repsPerSet,
                 totalSeries: plan.sets,
+                repos: restRemaining,
                 leftImage: "assets/images/guepard.png",
                 rightImage: "assets/images/mesange.png",
               ),
@@ -377,36 +378,6 @@ class _TractionPageState extends State<TractionPage> {
                       style: TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      "Série $currentSet / ${plan.sets}",
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    if (inRest) ...[
-                      const Text('Repos', textAlign: TextAlign.center),
-                      Text(
-                        '$restRemaining s',
-                        style: Theme.of(context).textTheme.displayMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      LinearProgressIndicator(
-                        value: plan.restSeconds == 0
-                            ? 1
-                            : (plan.restSeconds - restRemaining) /
-                                plan.restSeconds,
-                      ),
-                    ] else ...[
-                      const Text('Répétitions', textAlign: TextAlign.center),
-                      Text(
-                        '$currentReps / ${plan.repsPerSet}',
-                        style: Theme.of(context).textTheme.displayLarge,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-
                   ],
                 ),
               ),
