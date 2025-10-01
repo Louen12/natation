@@ -5,15 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import 'package:natation/models/run_session.dart';
+import 'package:natation/repositories/run_repository.dart';
+import 'package:natation/services/geo_utils.dart';
+import 'package:natation/widgets/running_controls.dart';
+import 'package:natation/widgets/running_map.dart';
+import 'package:natation/widgets/stat_chip.dart';
 
-/// Écran de course à pied avec suivi temps réel sur OpenStreetMap.
-///
-/// Paramètres:
-/// - plannedDistanceMeters: Distance prévue (en mètres)
-/// - maxDurationSeconds: Temps maximum (en secondes)
-///
-/// Vous pouvez passer les paramètres via le constructeur ou via
-/// ModalRoute.of(context).settings.arguments sous la forme d'une Map.
 class RunningScreen extends StatefulWidget {
   final double? plannedDistanceMeters;
   final int? maxDurationSeconds;
@@ -27,6 +25,7 @@ class RunningScreen extends StatefulWidget {
 class _RunningScreenState extends State<RunningScreen> {
   // Map & tracking
   final MapController _mapController = MapController();
+  final RunRepository _repo = RunRepository();
   StreamSubscription<Position>? _posSub;
   final List<ll.LatLng> _track = [];
   ll.LatLng? _currentLatLng;
@@ -98,9 +97,8 @@ class _RunningScreenState extends State<RunningScreen> {
           _track.add(latLng);
         } else {
           final last = _track.last;
-          final segment = _haversine(last.latitude, last.longitude, latLng.latitude, latLng.longitude);
+          final segment = GeoUtils.haversine(last.latitude, last.longitude, latLng.latitude, latLng.longitude);
           if (!segment.isNaN && segment.isFinite && segment < 1000) {
-            // anti-glitch: ignore >1km jumps
             _distanceMeters += segment;
             _track.add(latLng);
           }
@@ -108,7 +106,6 @@ class _RunningScreenState extends State<RunningScreen> {
       }
     });
 
-    // recentrer légèrement la carte
     try {
       _mapController.move(latLng, _mapController.camera.zoom);
     } catch (_) {}
@@ -191,6 +188,7 @@ class _RunningScreenState extends State<RunningScreen> {
                 const SizedBox(height: 8),
                 Text('Temps max: ${_formatDuration(Duration(seconds: _maxDurationSeconds))}'),
                 Text('Temps réalisé: ${_formatDuration(_elapsed)}'),
+                Text('Coordonées : ${_track}')
               ],
             ),
             actions: [
@@ -240,7 +238,7 @@ class _RunningScreenState extends State<RunningScreen> {
   }
 
   Widget _buildMap() {
-    final center = _currentLatLng ?? const ll.LatLng(48.8566, 2.3522); // Paris par défaut
+    final center = _currentLatLng ?? const ll.LatLng(48.8566, 2.3522);
 
     return FlutterMap(
       mapController: _mapController,
