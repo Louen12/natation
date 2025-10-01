@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/ExerciseCard.dart';
 
 class SleevingExercisePage extends StatefulWidget {
   const SleevingExercisePage({super.key});
@@ -10,6 +11,18 @@ class SleevingExercisePage extends StatefulWidget {
 class _SleevingExercisePageState extends State<SleevingExercisePage> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Exercice de gainage')),
+      body: Center(
+        child: ExerciseCard(
+          title: "Prince de gloire",
+          bestTime: "00:45",
+          time: "01:10",
+          repetitions: 3,
+          leftImage: "assets/images/fast-cheetah.png",
+          rightImage: "assets/images/bird.png",
+        ),
+      ),
+    );
   }
 }
