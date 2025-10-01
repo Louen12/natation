@@ -14,7 +14,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       initialRoute: '/',
       routes: {
-        '/': (context) => const ProgramPage(title: 'Programme'),
+        '/': (context) => const YogaPage(title: 'Programme'),
         '/yoga': (context) => const YogaPage(title: "Yoga"),
       },
     );
