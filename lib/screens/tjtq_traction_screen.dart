@@ -33,13 +33,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   // FSM
   Phase _phase = Phase.idle;
   DateTime _phaseStart = DateTime.now();
+  DateTime _workoutStarted = DateTime.now();
 
-  // Seuils adaptatifs
-  double base = 0.0;     // baseline lente
+  // Seuils adaptatifs (noyau)
+  double base = 0.0;      // baseline lente
   double ampThresh = 0.6; // amplitude min pour valider
   double slopeEps  = 0.03; // pente mini
-  double downGate  = -0.2; // porte basse
-  double upGate    =  0.2; // porte haute
+  double downGate  = -0.2; // porte basse (delta < downGate)
+  double upGate    =  0.2; // porte haute (delta > upGate)
 
   // Mémoire du cycle
   double minInDescent = 0.0;
@@ -78,7 +79,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Future<void> _calibrate() async {
     final samples = <double>[];
     final sub = _sensor.verticalStream().listen(samples.add);
-    await Future<void>.delayed(const Duration(milliseconds: 800)); // plus court
+    await Future<void>.delayed(const Duration(milliseconds: 800)); // court & réactif
     await sub.cancel();
     if (samples.isEmpty) return;
 
@@ -88,19 +89,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     base = mu;
 
-    // Portes très basses (franchissement facile)
+    // Portes basses = franchissement facile
     final gate = math.max(0.15, sigma * 1.2);
     downGate = -gate;
     upGate   =  gate;
 
-    // Amplitude minimale très basse (s’ajustera ensuite)
+    // Amplitude minimale basse (s’ajustera ensuite avec les mouvements)
     ampThresh = math.max(0.40, sigma * 1.2);
 
-    // Pente mini très faible (accepte vite le changement de sens)
+    // Pente mini faible
     slopeEps  = math.max(0.02, sigma * 0.25);
 
-    // Streak
+    // Streak court
     _needStreak = 1;
+  }
+
+  // -------- “Laxisme progressif” de démarrage --------
+  // k < 1.0 => plus tolérant
+  double _leniencyScale() {
+    final since = DateTime.now().difference(_workoutStarted);
+    if (since < const Duration(seconds: 25) && currentReps < 2) return 0.5;   // très laxiste
+    if (since < const Duration(seconds: 45) && currentReps < 4) return 0.75; // laxiste
+    return 1.0; // normal
   }
 
   // -------- Contrôles séance --------
@@ -112,6 +122,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       restRemaining = 0;
       _phase = Phase.idle;
       _phaseStart = DateTime.now();
+      _workoutStarted = DateTime.now();
     });
 
     await _calibrate();
@@ -160,10 +171,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       final now = DateTime.now();
       final dtMs = now.difference(_phaseStart).inMilliseconds;
 
-      // streaks
-      if (slope < -slopeEps) {
+      // ---------- appliquer la tolérance dynamique ----------
+      final k = _leniencyScale();
+
+      // Gates vers zéro (plus facile à franchir quand k<1)
+      final gDown = downGate * k; // ex: -0.2 * 0.5 = -0.10 -> plus tolérant
+      final gUp   = upGate   * k; // ex:  0.2 * 0.5 =  0.10 -> plus tolérant
+
+      // Seuils abaissés
+      final aThresh   = ampThresh * k;
+      final sEps      = slopeEps  * k;
+
+      // Réfractaire raccourci en phase laxiste
+      final refracMs = (refractory.inMilliseconds * (0.5 + 0.5 * k)).round();
+      final refractoryNow = Duration(milliseconds: refracMs);
+
+      // Phase plus longue si besoin
+      final maxPhaseNow = (maxPhaseMs * (1.0 + (1.0 - k))).round();
+
+      // ---------- streaks avec pente plus permissive ----------
+      if (slope < -sEps) {
         _downStreak++; _upStreak = 0;
-      } else if (slope > slopeEps) {
+      } else if (slope > sEps) {
         _upStreak++; _downStreak = 0;
       } else {
         _downStreak = 0; _upStreak = 0;
@@ -171,7 +200,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
       switch (_phase) {
         case Phase.idle:
-          if ((currentMA - base) < downGate && _downStreak >= _needStreak) {
+          if ((currentMA - base) < gDown && _downStreak >= _needStreak) {
             _phase = Phase.descent;
             _phaseStart = now;
             minInDescent = currentMA;
@@ -181,49 +210,54 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
         case Phase.descent:
           if (currentMA < minInDescent) minInDescent = currentMA;
+          // on accepte le changement de sens
           if (_upStreak >= _needStreak) {
             _phase = Phase.bottom;
             _phaseStart = now;
             _bottomAt = now;
             _upStreak = 0;
           }
-          if (dtMs > maxPhaseMs) _resetToIdle(now);
+          if (dtMs > maxPhaseNow) _resetToIdle(now);
           break;
 
         case Phase.bottom:
           if (now.difference(_bottomAt) >= minBottomHold &&
-              (currentMA - base) > upGate && // porte haute
+              (currentMA - base) > gUp &&
               _upStreak >= _needStreak) {
             _phase = Phase.ascent;
             _phaseStart = now;
             maxInAscent = currentMA;
             _upStreak = 0;
           }
-          if (dtMs > maxPhaseMs) _resetToIdle(now);
+          if (dtMs > maxPhaseNow) _resetToIdle(now);
           break;
 
         case Phase.ascent:
           if (currentMA > maxInAscent) maxInAscent = currentMA;
 
-          // Fin de montée = pente re-négative (ou retombée sous upGate)
+          // Fin de montée = pente re-négative (ou retombée sous une fraction de la porte haute)
           final ascentDone = _downStreak >= _needStreak ||
-              (currentMA - base) < (upGate * 0.5); // sortie souple
+              (currentMA - base) < (gUp * 0.5); // sortie souple
 
           if (ascentDone) {
             final amp = (maxInAscent - minInDescent).abs();
-            final refractoryOk = now.difference(_lastRep) >= refractory;
 
-            // accepte si >= 60% du seuil ou seuil atteint
-            final reachedMain = amp >= ampThresh;
-            final reachedSoft = amp >= ampThresh * 0.60;
+            // en mode laxiste, tolérance “soft” abaissée
+            final softRatio = (k < 1.0) ? 0.40 : 0.60; // <- plus tolérant au début
+            final reachedMain = amp >= aThresh;
+            final reachedSoft = amp >= aThresh * softRatio;
+
+            final refractoryOk = now.difference(_lastRep) >= refractoryNow;
 
             if ((reachedMain || reachedSoft) && refractoryOk) {
               _lastRep = now;
               setState(() => currentReps++);
 
-              // Ajustements doux : rapprocher ampThresh de ce que tu fais
+              // Ajustements doux : rapprocher ampThresh de ce que tu fais réellement
               final target = math.max(ampThresh * 0.85, amp);
               ampThresh = 0.6 * ampThresh + 0.4 * target;
+
+              // Recentrer très légèrement la base (utile si tu bouges un peu)
               base = base * 0.9 + ((minInDescent + maxInAscent) / 2.0) * 0.1;
 
               if (currentReps >= plan.repsPerSet) {
@@ -235,7 +269,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             _resetToIdle(now);
           }
 
-          if (dtMs > maxPhaseMs) _resetToIdle(now);
+          if (dtMs > maxPhaseNow) _resetToIdle(now);
           break;
       }
 
@@ -312,6 +346,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   // UI
   @override
   Widget build(BuildContext context) {
+    final k = _leniencyScale();
     return Scaffold(
       appBar: AppBar(title: const Text('Tractions')),
       body: Padding(
@@ -369,9 +404,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
             if (inRest) ...[
               const Text('Repos', textAlign: TextAlign.center),
-              Text('$restRemaining s',
-                  style: Theme.of(context).textTheme.displayMedium,
-                  textAlign: TextAlign.center),
+              Text(
+                '$restRemaining s',
+                style: Theme.of(context).textTheme.displayMedium,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 6),
               LinearProgressIndicator(
                 value: plan.restSeconds == 0
@@ -387,9 +424,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'phase=$_phase  val=${val.toStringAsFixed(2)} base=${base.toStringAsFixed(2)}\n'
-                    'gates: down=${downGate.toStringAsFixed(2)} up=${upGate.toStringAsFixed(2)}  '
-                    'ampMin=${ampThresh.toStringAsFixed(2)} slope>${slopeEps.toStringAsFixed(2)}',
+                // Debug utile : on affiche aussi le facteur de laxisme k
+                'phase=$_phase  val=${val.toStringAsFixed(2)} base=${base.toStringAsFixed(2)}  k=${k.toStringAsFixed(2)}\n'
+                    'gates: down=${(downGate*k).toStringAsFixed(2)} up=${(upGate*k).toStringAsFixed(2)}  '
+                    'ampMin=${(ampThresh*k).toStringAsFixed(2)} slope>${(slopeEps*k).toStringAsFixed(2)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 12),
               ),
