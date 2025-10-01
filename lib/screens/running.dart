@@ -7,8 +7,8 @@ import 'package:latlong2/latlong.dart' as ll;
 
 import '../widgets/running_map.dart';
 import '../widgets/running_controls.dart';
-import '../widgets/stat_chip.dart';
 import '../services/geo_utils.dart';
+import '../widgets/vico_header.dart';
 
 class RunningScreen extends StatefulWidget {
   final double? plannedDistanceMeters;
@@ -206,10 +206,6 @@ class _RunningScreenState extends State<RunningScreen> {
     _posSub?.cancel();
     super.dispose();
   }
-import '../widgets/vico_header.dart';
-
-class RunningScreen extends StatelessWidget {
-  const RunningScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -221,19 +217,43 @@ class RunningScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Course à pied'),
-      ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
-            child: _buildMap(),
+            child: Stack(
+              children: [
+                _buildMap(),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: VicoHeader(
+                    temps: _elapsed,
+                    distance: _distanceMeters / 1000,
+                  ),
+                ),
+                // Flèche de retour en bas à gauche sur la map
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, size: 32, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.5),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          _buildStatsPanel(),
           const SizedBox(height: 8),
           _buildControls(),
           const SizedBox(height: 12),
         ],
+      ),
       ),
     );
   }
@@ -243,35 +263,6 @@ class RunningScreen extends StatelessWidget {
       mapController: _mapController,
       track: _track,
       current: _currentLatLng,
-    );
-  }
-
-  Widget _buildStatsPanel() {
-    final km = _distanceMeters / 1000;
-    final remaining = (_plannedDistanceMeters - _distanceMeters).clamp(0, double.infinity);
-    final remainingKm = remaining / 1000;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.grey.shade100, boxShadow: [
-        BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 4, offset: const Offset(0, -2)),
-      ]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              StatChip(label: 'Distance', value: '${km.toStringAsFixed(2)} km'),
-              StatChip(label: 'Temps', value: GeoUtils.formatDuration(_elapsed)),
-              StatChip(label: 'Reste', value: '${remainingKm.toStringAsFixed(2)} km'),
-              StatChip(label: 'Temps max', value: GeoUtils.formatDuration(Duration(seconds: _maxDurationSeconds))),
-            ],
-          ),
-        ],
-      ),
     );
   }
 

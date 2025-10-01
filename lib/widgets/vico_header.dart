@@ -109,7 +109,7 @@ class VicoHeader extends StatelessWidget {
         Text(
         value,
         style: const TextStyle(
-          fontFamily: 'DynaPuff',   // <-- Ajouter la police ici
+          fontFamily: 'DynaPuff',
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -118,7 +118,7 @@ class VicoHeader extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontFamily: 'DynaPuff',   // <-- Et ici aussi
+            fontFamily: 'DynaPuff',
             color: Colors.white,
           ),
         ),

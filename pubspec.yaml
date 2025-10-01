@@ -24,6 +24,7 @@ flutter:
   assets:
     - maquette/guepard.png
     - maquette/mesange.png
+    - entrainement.json
 
   fonts:
     - family: DynaPuff
