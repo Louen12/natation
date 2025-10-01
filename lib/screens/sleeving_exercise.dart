@@ -17,7 +17,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
         child: ExerciseCard(
           title: "Prince de gloire",
           bestTime: "00:45",
-          time: "01:10",
+          time: "-:--",
           repetitions: 3,
           leftImage: "assets/images/fast-cheetah.png",
           rightImage: "assets/images/bird.png",
