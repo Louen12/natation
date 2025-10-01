@@ -185,7 +185,6 @@ class _RunningScreenState extends State<RunningScreen> {
                 const SizedBox(height: 8),
                 Text('Temps max: ${GeoUtils.formatDuration(Duration(seconds: _maxDurationSeconds))}'),
                 Text('Temps réalisé: ${GeoUtils.formatDuration(_elapsed)}'),
-                Text('Coordonées : ${_track}')
               ],
             ),
             actions: [

@@ -38,7 +38,6 @@ class RunningControls extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Bouton gauche - Pause/Resume
           IconButton(
             onPressed: running ? onPauseResume : null,
             icon: Icon(
@@ -52,7 +51,6 @@ class RunningControls extends StatelessWidget {
             ),
           ),
 
-          // Bouton central - Start ou Gif
           running
               ? Container(
             padding: const EdgeInsets.all(10),
@@ -79,7 +77,6 @@ class RunningControls extends StatelessWidget {
             ),
           ),
 
-          // Bouton droit - Stop
           IconButton(
             onPressed: running ? onStop : null,
             icon: const Icon(Icons.stop, color: Colors.white),
