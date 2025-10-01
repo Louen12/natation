@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:natation/models/run_session.dart';
 
 class ExerciseCard extends StatelessWidget {
+  final RunSession? runSession;
   final String title;
   final String? bestTime;
   final String? time;
@@ -25,6 +27,7 @@ class ExerciseCard extends StatelessWidget {
     this.repos,
     this.leftImage,
     this.rightImage,
+    this.runSession,
     this.backgroundColor = const Color(0xFFFF6200),
   });
 
@@ -42,9 +45,7 @@ class ExerciseCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(24),
               height: 220,
-              decoration: BoxDecoration(
-                color: backgroundColor,
-              ),
+              decoration: BoxDecoration(color: backgroundColor),
               child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -185,12 +186,15 @@ class ExerciseCardClipper extends CustomClipper<Path> {
     final path = Path();
     const radius = 20.0;
 
+
     // Point de départ : coin supérieur gauche avec arrondi
     path.moveTo(radius, 0);
+
 
     // Côté supérieur droit avec arrondi
     path.lineTo(size.width - radius, 0);
     path.quadraticBezierTo(size.width, 0, size.width, radius);
+
 
     // Côté droit jusqu'au coin inférieur droit avec arrondi
     path.lineTo(size.width, size.height - 40 - radius);
@@ -204,6 +208,7 @@ class ExerciseCardClipper extends CustomClipper<Path> {
       size.height, // Hauteur finale (pic vers le bas)
     );
 
+
     // Coin inférieur gauche qui remonte vers le pic central
     path.quadraticBezierTo(
       size.width * 0.25, // Point de contrôle horizontal
@@ -211,6 +216,7 @@ class ExerciseCardClipper extends CustomClipper<Path> {
       radius, // Point final au coin gauche (avec arrondi)
       size.height - 40, // Hauteur finale (même proportion que le côté droit)
     );
+
 
     // Arrondi du coin inférieur gauche
     path.quadraticBezierTo(0, size.height - 40, 0, size.height - 40 - radius);

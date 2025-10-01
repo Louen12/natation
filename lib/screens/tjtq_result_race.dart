@@ -2,41 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:natation/widgets/tjtq_card.dart';
+import 'package:natation/models/run_session.dart'; // ton modèle RunSession
 
 class RunResultPage extends StatelessWidget {
-  const RunResultPage({super.key});
+  final RunSession runSession;
+
+  const RunResultPage({super.key, required this.runSession});
 
   @override
   Widget build(BuildContext context) {
-    // Exemple de coordonnées du parcours
-    final List<LatLng> parcours = [
-      LatLng(48.111338, -1.68002), // Rennes
-      LatLng(48.11321, -1.6745),
-      LatLng(48.11501, -1.6720),
-      LatLng(48.1163, -1.6781),
-      LatLng(48.1139, -1.6820),
-    ];
+    final parcours = runSession.track;
 
     return Scaffold(
       body: Stack(
         children: [
           /// --- OpenStreetMap ---
           FlutterMap(
-            options: MapOptions(initialCenter: parcours[0], initialZoom: 15),
+            options: MapOptions(
+              initialCenter: parcours.isNotEmpty ? parcours[0] : LatLng(0, 0),
+              initialZoom: 15,
+            ),
             children: [
               TileLayer(
                 urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                 userAgentPackageName: "com.example.app",
               ),
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: parcours,
-                    strokeWidth: 6,
-                    color: Colors.black,
-                  ),
-                ],
-              ),
+              if (parcours.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: parcours,
+                      strokeWidth: 6,
+                      color: Colors.black,
+                    ),
+                  ],
+                ),
             ],
           ),
 
@@ -46,12 +46,14 @@ class RunResultPage extends StatelessWidget {
             left: 0,
             right: 0,
             child: ExerciseCard(
-              title: "NATH A FOND",
-              time: "59:50",
-              bestTime: "29:25",
-              repetitions: 2,
-              leftImage: "assets/cheetah.png",
-              rightImage: "assets/bird.png",
+              title: "COURSE TERMINÉE",
+              runSession: runSession,
+              // time:
+              //     "${runSession.elapsed.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(runSession.elapsed.inSeconds.remainder(60)).toString().padLeft(2, '0')}",
+              // bestTime: "Objectif: ${runSession.maxDurationSeconds ~/ 60}:${(runSession.maxDurationSeconds % 60).toString().padLeft(2, '0')}",
+              // repetitions: 1,
+              // leftImage: "assets/cheetah.png",
+              // rightImage: "assets/bird.png",
             ),
           ),
         ],
