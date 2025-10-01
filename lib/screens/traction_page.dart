@@ -1,20 +1,20 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../models/tjtq_traction.dart';
-import '../services/tjtq_traction_sensor_service.dart';
+import '../models/traction.dart';
+import '../services/traction_sensor_service.dart';
 
 /// 1 rep = descent -> bottom -> ascent validée
 enum Phase { idle, descent, bottom, ascent }
 
-class WorkoutScreen extends StatefulWidget {
-  const WorkoutScreen({super.key});
+class TractionPage extends StatefulWidget {
+  const TractionPage({super.key});
   @override
-  State<WorkoutScreen> createState() => _WorkoutScreenState();
+  State<TractionPage> createState() => _TractionPageState();
 }
 
-class _WorkoutScreenState extends State<WorkoutScreen> {
-  // Plan fixe
+class _TractionPageState extends State<TractionPage> {
+  // Plan fixe pour tests
   static const TractionPlan plan = TractionPlan.defaultPlan;
 
   // État séance
@@ -33,7 +33,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   // FSM
   Phase _phase = Phase.idle;
   DateTime _phaseStart = DateTime.now();
-  DateTime _workoutStarted = DateTime.now();
+  DateTime _tractionStarted = DateTime.now();
 
   // Seuils adaptatifs (noyau)
   double base = 0.0;      // baseline lente
@@ -89,7 +89,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     base = mu;
 
-    // Portes basses = franchissement facile
+    // Portes basses
     final gate = math.max(0.15, sigma * 1.2);
     downGate = -gate;
     upGate   =  gate;
@@ -107,14 +107,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   // -------- “Laxisme progressif” de démarrage --------
   // k < 1.0 => plus tolérant
   double _leniencyScale() {
-    final since = DateTime.now().difference(_workoutStarted);
-    if (since < const Duration(seconds: 25) && currentReps < 2) return 0.5;   // très laxiste
-    if (since < const Duration(seconds: 45) && currentReps < 4) return 0.75; // laxiste
+    final since = DateTime.now().difference(_tractionStarted);
+    if (since < const Duration(seconds: 25) && currentReps < 2) return 0.5;
+    if (since < const Duration(seconds: 45) && currentReps < 4) return 0.75;
     return 1.0; // normal
   }
 
   // -------- Contrôles séance --------
-  void _startWorkout() async {
+  void _startTraction() async {
     setState(() {
       currentSet = 1;
       currentReps = 0;
@@ -122,7 +122,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       restRemaining = 0;
       _phase = Phase.idle;
       _phaseStart = DateTime.now();
-      _workoutStarted = DateTime.now();
+      _tractionStarted = DateTime.now();
     });
 
     await _calibrate();
@@ -296,7 +296,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           content: const Text('Tu as terminé toutes les séries !'),
           actions: [
             TextButton(
-              onPressed: () { Navigator.pop(context); _stopWorkout(); },
+              onPressed: () { Navigator.pop(context); _stopTraction(); },
               child: const Text('OK'),
             ),
           ],
@@ -330,7 +330,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     });
   }
 
-  void _stopWorkout() {
+  void _stopTraction() {
     _sub?.cancel();
     _restTimer?.cancel();
     setState(() {
@@ -358,17 +358,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
-                    Text('Plan fixe', style: Theme.of(context).textTheme.titleMedium),
                     Text(
                       '${plan.sets} séries × ${plan.repsPerSet} reps • Repos ${plan.restSeconds}s',
                       style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Conseil: poche poitrine ou brassard.\n'
-                          'Restez immobile 1s après "Démarrer" pour calibrer.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
@@ -380,15 +372,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: _startWorkout,
+                  onPressed: _startTraction,
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Démarrer'),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: _stopWorkout,
-                  icon: const Icon(Icons.stop),
-                  label: const Text('Réinitialiser'),
                 ),
               ],
             ),
@@ -421,15 +407,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 '$currentReps / ${plan.repsPerSet}',
                 style: Theme.of(context).textTheme.displayLarge,
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                // Debug utile : on affiche aussi le facteur de laxisme k
-                'phase=$_phase  val=${val.toStringAsFixed(2)} base=${base.toStringAsFixed(2)}  k=${k.toStringAsFixed(2)}\n'
-                    'gates: down=${(downGate*k).toStringAsFixed(2)} up=${(upGate*k).toStringAsFixed(2)}  '
-                    'ampMin=${(ampThresh*k).toStringAsFixed(2)} slope>${(slopeEps*k).toStringAsFixed(2)}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12),
               ),
             ],
           ],
