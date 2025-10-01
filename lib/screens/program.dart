@@ -49,7 +49,7 @@ class _ProgramPageState extends State<ProgramPage> {
                 title: ex.name,
                 onTap: () {
                   // TODO: navigation vers la page détail selon le type
-                  // Navigator.of(context).pushNamed('/exercise', arguments: ex);
+                  Navigator.of(context).pushNamed('/yoga', arguments: ex);
                 },
               );
             },
