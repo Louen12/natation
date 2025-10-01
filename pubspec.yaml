@@ -10,6 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
   sensors_plus: ^5.0.0
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:
@@ -19,4 +22,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - db.json
+    - assets/db.json
