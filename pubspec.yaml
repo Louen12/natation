@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_map: ^7.0.2
+  geolocator: ^13.0.1
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
@@ -17,7 +20,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
   assets:
-    - entrainement.json
     - maquette/guepard.png
     - maquette/mesange.png
+    - entrainement.json
+
+  fonts:
+    - family: DynaPuff
+      fonts:
+        - asset: fonts/DynaPuff-VariableFont_wdth,wght.ttf
