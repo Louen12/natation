@@ -1,28 +1,37 @@
 import 'package:flutter/material.dart';
 import '../widgets/ExerciseCard.dart';
 
-class SleevingExercisePage extends StatefulWidget {
-  const SleevingExercisePage({super.key});
+class SleevingExercisePage extends StatelessWidget {
+  final GlobalKey<ExerciseCardState> cardKey;
 
-  @override
-  State<SleevingExercisePage> createState() => _SleevingExercisePageState();
-}
+  const SleevingExercisePage({super.key, required this.cardKey});
 
-class _SleevingExercisePageState extends State<SleevingExercisePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Exercice de gainage')),
-      body: Center(
-        child: ExerciseCard(
-          title: "Prince de gloire",
-          bestTime: "00:45",
-          time: "-:--",
-          repetitions: 3,
-          leftImage: "assets/images/fast-cheetah.png",
-          rightImage: "assets/images/bird.png",
-        ),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset("assets/images/julcik.png", fit: BoxFit.cover),
+          Container(
+            color: const Color.fromARGB(120, 0, 0, 0),
+            child: Column(
+              children: [
+                ExerciseCard(
+                  key: cardKey,
+                  title: "Nath à fond",
+                  bestTime: "00:45",
+                  repetitions: 3,
+                  leftImage: "assets/images/fast-cheetah.png",
+                  rightImage: "assets/images/bird.png",
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+

@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
-class ExerciseCard extends StatelessWidget {
+class ExerciseCard extends StatefulWidget {
   final String title;
   final String? bestTime;
-  final String? time;
   final int? repetitions;
   final String? leftImage;
   final String? rightImage;
@@ -13,7 +13,6 @@ class ExerciseCard extends StatelessWidget {
     super.key,
     required this.title,
     this.bestTime,
-    this.time,
     this.repetitions,
     this.leftImage,
     this.rightImage,
@@ -21,113 +20,145 @@ class ExerciseCard extends StatelessWidget {
   });
 
   @override
+  State<ExerciseCard> createState() => ExerciseCardState();
+}
+
+class ExerciseCardState extends State<ExerciseCard> {
+  Timer? _timer;
+  int _elapsedSeconds = 0;
+  bool _isRunning = false;
+
+  void startTimer() {
+    _timer?.cancel();
+    _elapsedSeconds = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        _elapsedSeconds++;
+      });
+    });
+    setState(() => _isRunning = true);
+  }
+
+  void stopTimer() {
+    _timer?.cancel();
+    setState(() => _isRunning = false);
+  }
+
+  void toggleTimer() {
+    if (_isRunning) {
+      stopTimer();
+    } else {
+      startTimer();
+    }
+  }
+
+  bool get isRunning => _isRunning;
+
+  String get formattedTime {
+    final minutes = (_elapsedSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_elapsedSeconds % 60).toString().padLeft(2, '0');
+    return "$minutes:$seconds";
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      clipBehavior: Clip.none,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 80),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Carte avec ClipPath
           ClipPath(
             clipper: ExerciseCardClipper(),
             child: Container(
               padding: const EdgeInsets.all(24),
               height: 220,
               decoration: BoxDecoration(
-                color: backgroundColor,
+                color: widget.backgroundColor,
               ),
               child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontFamily: 'DynaPuff',
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  if (bestTime != null)
-                    Column(
-                      children: [
-                        Text(
-                          bestTime!,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
-                        ),
-                        const Text(
-                          "Best Time",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
-                        ),
-                      ],
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontFamily: 'DynaPuff',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-                  if (time != null)
-                    Column(
-                      children: [
-                        Text(
-                          time!,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      if (widget.bestTime != null)
+                        Column(
+                          children: [
+                            Text(widget.bestTime!,
+                                style: const TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontFamily: 'DynaPuff')),
+                            const Text("Best Time",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'DynaPuff')),
+                          ],
+                        ),
+                      Column(
+                        children: [
+                          Text(
+                            formattedTime,
+                            style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff'),
                           ),
+                          const Text("Time",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'DynaPuff')),
+                        ],
+                      ),
+                      if (widget.repetitions != null)
+                        Column(
+                          children: [
+                            Text("${widget.repetitions}",
+                                style: const TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontFamily: 'DynaPuff')),
+                            const Text("Reps",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'DynaPuff')),
+                          ],
                         ),
-                        const Text(
-                          "Time",
-                          style: TextStyle(color: Colors.white , fontFamily: 'DynaPuff'),
-                        ),
-                      ],
-                    ),
-                  if (repetitions != null)
-                    Column(
-                      children: [
-                        Text(
-                          "$repetitions",
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
-                        ),
-                        const Text(
-                          "Reps",
-                          style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
-                        ),
-                      ],
-                    ),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
             ),
           ),
-          // Images qui débordent (devant la carte)
-          if (leftImage != null)
+          if (widget.leftImage != null)
             Positioned(
               top: -70,
               left: -30,
-              child: Image.asset(leftImage!, width: 160),
+              child: Image.asset(widget.leftImage!, width: 160),
             ),
-          if (rightImage != null)
+          if (widget.rightImage != null)
             Positioned(
               top: -70,
               right: -40,
-              child: Image.asset(rightImage!, width: 160),
+              child: Image.asset(widget.rightImage!, width: 160),
             ),
         ],
       ),
