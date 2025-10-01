@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:natation/services/jump_metrics.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 class JumpEvent {
@@ -36,10 +37,13 @@ class _Ema {
 }
 
 class JumpService with ChangeNotifier {
+  JumpService({required double massKg}) : _metrics = MetricsAggregator(massKg: massKg);
   // Public API
   final _events = StreamController<JumpEvent>.broadcast();
   Stream<JumpEvent> get events => _events.stream;
   final ValueNotifier<int> jumpCount = ValueNotifier<int>(0);
+  final MetricsAggregator _metrics;
+  final ValueNotifier<JumpStats> stats = ValueNotifier<JumpStats>(JumpStats.empty);
 
   // Subscriptions
   StreamSubscription<AccelerometerEvent>? _accSub;
@@ -86,6 +90,25 @@ class JumpService with ChangeNotifier {
     _accSub?.cancel(); _accSub = null;
     _gyroSub?.cancel(); _gyroSub = null;
     _resetAll();
+  }
+
+  void _onValidJump(Duration airTime, DateTime start, DateTime airborneAt, DateTime landing, double peakTakeoff, double peakLanding) {
+    final evt = JumpEvent(
+      start: start,
+      airborneAt: airborneAt,
+      landing: landing,
+      airTime: airTime,
+      peakTakeoffG: peakTakeoff,
+      peakLandingG: peakLanding,
+    );
+    if (!_events.isClosed) _events.add(evt);
+
+    // Update metrics
+    final updated = _metrics.addSample(airTime: airTime);
+    stats.value = updated;
+
+    jumpCount.value += 1;
+    notifyListeners();
   }
 
   void _onAccel(AccelerometerEvent e) {
@@ -144,17 +167,14 @@ class JumpService with ChangeNotifier {
           if (_tAir != null) {
             final airTime = _tLand!.difference(_tAir!);
             if (airTime >= minAir) {
-              final evt = JumpEvent(
-                start: _tImpulse ?? _tAir!,
-                airborneAt: _tAir!,
-                landing: _tLand!,
-                airTime: airTime,
-                peakTakeoffG: _peakTakeoff,
-                peakLandingG: _peakLanding,
+              _onValidJump(
+                airTime,
+                _tImpulse ?? _tAir!,
+                _tAir!,
+                _tLand!,
+                _peakTakeoff,
+                _peakLanding,
               );
-              if (!_events.isClosed) _events.add(evt);
-              jumpCount.value += 1;
-              notifyListeners();
               _state = _State.cooldown;
             } else {
               _resetToIdle(); // pas un vrai saut

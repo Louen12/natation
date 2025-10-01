@@ -1,5 +1,6 @@
 // jump_page.dart
 import 'package:flutter/material.dart';
+import 'package:natation/services/jump_metrics.dart';
 import 'package:natation/services/jump_service.dart';
 import 'package:provider/provider.dart';
 
@@ -9,7 +10,8 @@ class JumpExercisePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => JumpService()..start(),
+      //TODO: adjust massKg with user profile
+      create: (_) => JumpService(massKg: 72)..start(),
       child: const _JumpView(),
     );
   }
@@ -17,6 +19,10 @@ class JumpExercisePage extends StatelessWidget {
 
 class _JumpView extends StatelessWidget {
   const _JumpView();
+
+  String _m(double v) => '${v.toStringAsFixed(2)} m';
+
+  String _k(double v) => '${v.toStringAsFixed(2)} kcal';
 
   @override
   Widget build(BuildContext context) {
@@ -30,30 +36,46 @@ class _JumpView extends StatelessWidget {
           children: [
             ValueListenableBuilder<int>(
               valueListenable: service.jumpCount,
-              builder: (_, count, __) =>
-                  Text('Sauts détectés: $count', style: const TextStyle(fontSize: 22)),
+              builder: (_, count, __) => Text(
+                'Sauts détectés: $count',
+                style: const TextStyle(fontSize: 22),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            ValueListenableBuilder<JumpStats>(
+              valueListenable: service.stats,
+              builder: (_, s, __) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Moyenne hauteur: ${_m(s.avgHeightM)}'),
+                  Text('Plus haut:         ${_m(s.maxHeightM)}'),
+                  Text('Plus bas:          ${_m(s.minHeightM)}'),
+                  Text('Calories totales:  ${_k(s.totalCaloriesKcal)}'),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
+
             Expanded(
               child: StreamBuilder<JumpEvent>(
                 stream: service.events,
                 builder: (_, snap) {
-                  if (!snap.hasData) {
-                    return const Center(child: Text('Saute pour voir un event.'));
-                  }
+                  if (!snap.hasData)
+                    return const Center(child: Text('Saute pour commencer.'));
                   final e = snap.data!;
                   return Center(
                     child: Text(
-                      'Dernier saut:\n'
-                          'Airtime: ${e.airTime.inMilliseconds} ms\n'
-                          'Takeoff: ${e.peakTakeoffG.toStringAsFixed(2)} g\n'
-                          'Landing: ${e.peakLandingG.toStringAsFixed(2)} g',
+                      'Dernier saut: ${e.airTime.inMilliseconds} ms en l’air\n'
+                      'Takeoff: ${e.peakTakeoffG.toStringAsFixed(2)} g  '
+                      'Landing: ${e.peakLandingG.toStringAsFixed(2)} g',
                       textAlign: TextAlign.center,
                     ),
                   );
                 },
               ),
             ),
+
             Row(
               children: [
                 ElevatedButton(
