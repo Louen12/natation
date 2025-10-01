@@ -99,10 +99,28 @@ class _BannerHeader extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-            Positioned.fill(
+          Positioned.fill(
             top: 10,
             child: CustomPaint(
               painter: _BannerPainter(),
+            ),
+          ),
+          Positioned(
+            left: -10,
+            top: -10,
+            child: Image.asset(
+              'maquette/guepard.png',
+              width: 70,
+              height: 70,
+            ),
+          ),
+          Positioned(
+            right: -10,
+            top: -20,
+            child: Image.asset(
+              'maquette/mesange.png',
+              width: 80,
+              height: 80,
             ),
           ),
           Align(
@@ -117,16 +135,6 @@ class _BannerHeader extends StatelessWidget {
                       letterSpacing: 1.5,
                     ),
               ),
-            ),
-          ),
-          Positioned(
-            right: 12,
-            bottom: 4,
-            child: TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              onPressed: onAllSessions,
-              icon: const Icon(Icons.list_alt),
-              label: const Text('Tous'),
             ),
           ),
         ],
