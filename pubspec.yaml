@@ -24,6 +24,7 @@ flutter:
   assets:
     - maquette/guepard.png
     - maquette/mesange.png
+    - maquette/giphy.gif
     - entrainement.json
 
   fonts:

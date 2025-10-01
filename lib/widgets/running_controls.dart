@@ -18,32 +18,75 @@ class RunningControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xCC0D0D0D), // fond foncé
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black54,
+            offset: Offset(0, -2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: running ? null : onStart,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Lancer'),
+          // Bouton gauche - Pause/Resume
+          IconButton(
+            onPressed: running ? onPauseResume : null,
+            icon: Icon(
+              paused ? Icons.play_arrow : Icons.pause,
+              color: Colors.white,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.black,
+              padding: const EdgeInsets.all(20),
+              shape: const CircleBorder(),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: running ? onPauseResume : null,
-              icon: Icon(paused ? Icons.play_arrow : Icons.pause),
-              label: Text(paused ? 'Reprendre' : 'Pause'),
+
+          // Bouton central - Start ou Gif
+          running
+              ? Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.orange,
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                "maquette/giphy.gif", // ton gif dans assets
+                height: 60,
+                width: 60,
+                fit: BoxFit.cover,
+              ),
+            ),
+          )
+              : IconButton(
+            onPressed: onStart,
+            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.orange,
+              padding: const EdgeInsets.all(20),
+              shape: const CircleBorder(),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: running ? onStop : null,
-              icon: const Icon(Icons.stop),
-              label: const Text('Stop'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+
+          // Bouton droit - Stop
+          IconButton(
+            onPressed: running ? onStop : null,
+            icon: const Icon(Icons.stop, color: Colors.white),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.black,
+              padding: const EdgeInsets.all(20),
+              shape: const CircleBorder(),
             ),
           ),
         ],

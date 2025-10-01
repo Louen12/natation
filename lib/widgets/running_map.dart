@@ -16,7 +16,7 @@ class RunningMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final center = current ?? const ll.LatLng(48.8566, 2.3522);
+    final center = current ?? const ll.LatLng(48.108436, -1.648091);
     return FlutterMap(
       mapController: mapController,
       options: MapOptions(
@@ -41,8 +41,8 @@ class RunningMap extends StatelessWidget {
             markers: [
               Marker(
                 point: current!,
-                width: 40,
-                height: 40,
+                width: 30,
+                height: 30,
                 child: const Icon(Icons.my_location, color: Colors.red, size: 32),
               ),
             ],
