@@ -27,6 +27,16 @@ class TrainingSet {
     this.intensity,
   });
 
+  factory TrainingSet.fromJson(Map<String, dynamic> json) {
+    return TrainingSet(
+      distance: json['distance'] as int,
+      stroke: Stroke.values.firstWhere((s) => s.name == json['stroke']),
+      repetitions: json['repetitions'] ?? 1,
+      comment: json['comment'],
+      intensity: json['intensity'],
+    );
+  }
+
   int get totalDistance => distance * repetitions;
 }
 
@@ -48,6 +58,18 @@ class TrainingSession {
     this.coolDown = const [],
     this.notes,
   });
+
+  factory TrainingSession.fromJson(Map<String, dynamic> json) {
+    return TrainingSession(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      date: DateTime.parse(json['date'] as String),
+      warmUp: (json['warmUp'] as List<dynamic>? ?? []).map((e) => TrainingSet.fromJson(e as Map<String, dynamic>)).toList(),
+      mainSet: (json['mainSet'] as List<dynamic>? ?? []).map((e) => TrainingSet.fromJson(e as Map<String, dynamic>)).toList(),
+      coolDown: (json['coolDown'] as List<dynamic>? ?? []).map((e) => TrainingSet.fromJson(e as Map<String, dynamic>)).toList(),
+      notes: json['notes'],
+    );
+  }
 
   int get totalDistance => [
         ...warmUp,
