@@ -8,6 +8,7 @@ class ExerciseCard extends StatelessWidget {
   final int? totalRepetitions;
   final int? series;
   final int? totalSeries;
+  final int? repos;
   final String? leftImage;
   final String? rightImage;
   final Color backgroundColor;
@@ -21,6 +22,7 @@ class ExerciseCard extends StatelessWidget {
     this.totalRepetitions,
     this.series,
     this.totalSeries,
+    this.repos,
     this.leftImage,
     this.rightImage,
     this.backgroundColor = const Color(0xFFFF6200),
@@ -111,7 +113,25 @@ class ExerciseCard extends StatelessWidget {
                           ),
                         ),
                         const Text(
-                          "Reps",
+                          "Series",
+                          style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
+                        ),
+                      ],
+                    ),
+                  if (repos != 0)
+                    Column(
+                      children: [
+                        Text(
+                          "$repos",
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'DynaPuff',
+                          ),
+                        ),
+                        const Text(
+                          "Repos",
                           style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
                         ),
                       ],
