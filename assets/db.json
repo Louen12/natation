@@ -34,7 +34,8 @@
         },
         {
           "name": "Position du lotus",
-          "time": "500"
+          "time": "500",
+          "rest": null
         }
       ]
     },
