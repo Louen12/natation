@@ -1,16 +1,14 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
-import 'package:natation/models/run_session.dart';
-import 'package:natation/repositories/run_repository.dart';
-import 'package:natation/services/geo_utils.dart';
-import 'package:natation/widgets/running_controls.dart';
-import 'package:natation/widgets/running_map.dart';
-import 'package:natation/widgets/stat_chip.dart';
+
+import '../widgets/running_map.dart';
+import '../widgets/running_controls.dart';
+import '../widgets/stat_chip.dart';
+import '../services/geo_utils.dart';
 
 class RunningScreen extends StatefulWidget {
   final double? plannedDistanceMeters;
@@ -25,7 +23,6 @@ class RunningScreen extends StatefulWidget {
 class _RunningScreenState extends State<RunningScreen> {
   // Map & tracking
   final MapController _mapController = MapController();
-  final RunRepository _repo = RunRepository();
   StreamSubscription<Position>? _posSub;
   final List<ll.LatLng> _track = [];
   ll.LatLng? _currentLatLng;
@@ -186,8 +183,8 @@ class _RunningScreenState extends State<RunningScreen> {
                 Text('Distance prévue: ${(_plannedDistanceMeters / 1000).toStringAsFixed(2)} km'),
                 Text('Distance parcourue: ${( _distanceMeters / 1000).toStringAsFixed(2)} km'),
                 const SizedBox(height: 8),
-                Text('Temps max: ${_formatDuration(Duration(seconds: _maxDurationSeconds))}'),
-                Text('Temps réalisé: ${_formatDuration(_elapsed)}'),
+                Text('Temps max: ${GeoUtils.formatDuration(Duration(seconds: _maxDurationSeconds))}'),
+                Text('Temps réalisé: ${GeoUtils.formatDuration(_elapsed)}'),
                 Text('Coordonées : ${_track}')
               ],
             ),
@@ -238,39 +235,10 @@ class _RunningScreenState extends State<RunningScreen> {
   }
 
   Widget _buildMap() {
-    final center = _currentLatLng ?? const ll.LatLng(48.8566, 2.3522);
-
-    return FlutterMap(
+    return RunningMap(
       mapController: _mapController,
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: 16,
-        interactionOptions: const InteractionOptions(flags: ~InteractiveFlag.rotate),
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          subdomains: const ['a', 'b', 'c'],
-          userAgentPackageName: 'com.example.natation',
-        ),
-        if (_track.isNotEmpty)
-          PolylineLayer(
-            polylines: [
-              Polyline(points: _track, strokeWidth: 4, color: Colors.blueAccent),
-            ],
-          ),
-        if (_currentLatLng != null)
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: _currentLatLng!,
-                width: 40,
-                height: 40,
-                child: const Icon(Icons.my_location, color: Colors.red, size: 32),
-              ),
-            ],
-          ),
-      ],
+      track: _track,
+      current: _currentLatLng,
     );
   }
 
@@ -278,7 +246,6 @@ class _RunningScreenState extends State<RunningScreen> {
     final km = _distanceMeters / 1000;
     final remaining = (_plannedDistanceMeters - _distanceMeters).clamp(0, double.infinity);
     final remainingKm = remaining / 1000;
-    final remainingTime = (_maxDurationSeconds - _elapsed.inSeconds).clamp(0, 1 << 31);
 
     return Container(
       width: double.infinity,
@@ -293,10 +260,10 @@ class _RunningScreenState extends State<RunningScreen> {
             spacing: 16,
             runSpacing: 8,
             children: [
-              _statChip('Distance', '${km.toStringAsFixed(2)} km'),
-              _statChip('Temps', _formatDuration(_elapsed)),
-              _statChip('Reste', '${remainingKm.toStringAsFixed(2)} km'),
-              _statChip('Temps max', _formatDuration(Duration(seconds: _maxDurationSeconds))),
+              StatChip(label: 'Distance', value: '${km.toStringAsFixed(2)} km'),
+              StatChip(label: 'Temps', value: GeoUtils.formatDuration(_elapsed)),
+              StatChip(label: 'Reste', value: '${remainingKm.toStringAsFixed(2)} km'),
+              StatChip(label: 'Temps max', value: GeoUtils.formatDuration(Duration(seconds: _maxDurationSeconds))),
             ],
           ),
         ],
@@ -304,71 +271,15 @@ class _RunningScreenState extends State<RunningScreen> {
     );
   }
 
-  Widget _statChip(String label, String value) {
-    return Chip(
-      label: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.black54)),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildControls() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _running ? null : _start,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Lancer'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _running ? _pauseResume : null,
-              icon: Icon(_paused ? Icons.play_arrow : Icons.pause),
-              label: Text(_paused ? 'Reprendre' : 'Pause'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _running ? () => _stop(showDialogOnStop: true) : null,
-              icon: const Icon(Icons.stop),
-              label: const Text('Stop'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-            ),
-          ),
-        ],
-      ),
+    return RunningControls(
+      running: _running,
+      paused: _paused,
+      onStart: _start,
+      onPauseResume: _pauseResume,
+      onStop: () => _stop(showDialogOnStop: true),
     );
   }
-
-  String _formatDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
-  }
-
-  double _haversine(double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371000; // rayon Terre en m
-    final dLat = _deg2rad(lat2 - lat1);
-    final dLon = _deg2rad(lon2 - lon1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_deg2rad(lat1)) * math.cos(_deg2rad(lat2)) * math.sin(dLon / 2) * math.sin(dLon / 2);
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    return R * c;
-  }
-
-  double _deg2rad(double deg) => deg * math.pi / 180.0;
 
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
