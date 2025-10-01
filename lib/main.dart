@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/workout_screen.dart';
+import 'screens/tjtq_traction_screen.dart';
 
 void main() {
   runApp(const MyApp());

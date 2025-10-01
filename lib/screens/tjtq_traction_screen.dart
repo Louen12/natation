@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../models/workout.dart';
-import '../services/sensor_service.dart';
+import '../models/tjtq_traction.dart';
+import '../services/tjtq_traction_sensor_service.dart';
 
 /// Phases du cycle (1 rep = descent -> bottom -> ascent validée)
 enum Phase { idle, descent, bottom, ascent }
@@ -14,8 +14,8 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  // ---- Plan fixe (modifie dans models/workout.dart si besoin) -------------
-  static const WorkoutPlan plan = WorkoutPlan.defaultPlan;
+  // ---- Plan fixe -------------
+  static const TractionPlan plan = TractionPlan.defaultPlan;
 
   // ---- État séance --------------------------------------------------------
   int currentSet = 1;
@@ -47,8 +47,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   double maxInAscent  = 0.0;
 
   // Anti-doublons / garde-fous
-  static const minBottomHold = Duration(milliseconds: 140);
-  static const refractory    = Duration(milliseconds: 1200); // délai entre 2 reps
+  static const minBottomHold = Duration(milliseconds: 100);
+  static const refractory    = Duration(milliseconds: 900); // délai entre 2 reps
   static const maxPhaseMs    = 2500;                         // max par phase
   DateTime _bottomAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastRep  = DateTime.fromMillisecondsSinceEpoch(0);
@@ -80,15 +80,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     base = mu;
 
     // Portes (hystérésis de franchissement) — plus sigma est gros, plus on exige
-    final gate = math.max(0.45, sigma * 2.5);
+    final gate = math.max(0.35, sigma * 2);
     downGate = -gate;
     upGate   =  gate;
 
     // Amplitude minimale (écart min entre min et max d'un cycle)
-    ampThresh = math.max(1.2, sigma * 4.0);
+    ampThresh = math.max(0.90, sigma * 3.0);
 
     // Pente minimale pour considérer un vrai changement de sens
-    slopeEps = math.max(0.10, sigma * 0.8);
+    slopeEps = math.max(0.08, sigma * 0.6);
   }
 
   // --------------------------- Contrôles séance --------------------------
@@ -305,7 +305,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 OutlinedButton.icon(
                   onPressed: _stopWorkout,
                   icon: const Icon(Icons.stop),
-                  label: const Text('Stop'),
+                  label: const Text('Réinitialiser'),
                 ),
               ],
             ),
@@ -338,7 +338,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              // ✨ Debug pour réglages rapides (supprimable)
+              // Debug
               Text(
                 'phase=$_phase  val=${val.toStringAsFixed(2)}  base=${base.toStringAsFixed(2)}\n'
                     'gates: down=${downGate.toStringAsFixed(2)}  up=${upGate.toStringAsFixed(2)}  '

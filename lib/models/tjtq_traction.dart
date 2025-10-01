@@ -1,17 +1,17 @@
 /// Plan d'entraînement
-class WorkoutPlan {
+class TractionPlan {
   final int sets;        // nb de séries
   final int repsPerSet;  // nb de répétitions par série
   final int restSeconds; // repos entre séries (en secondes)
 
-  const WorkoutPlan({
+  const TractionPlan({
     required this.sets,
     required this.repsPerSet,
     required this.restSeconds,
   });
 
   /// TESTS
-  static const WorkoutPlan defaultPlan = WorkoutPlan(
+  static const TractionPlan defaultPlan = TractionPlan(
     sets: 3,
     repsPerSet: 8,
     restSeconds: 90,
