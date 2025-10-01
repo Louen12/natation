@@ -327,7 +327,7 @@ class _TractionPageState extends State<TractionPage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 50), // <-- espace en haut
+              padding: const EdgeInsets.only(top: 50),
               child: ExerciseCard(
                 title: "NATH A FOND",
                 bestTime: null,
