@@ -320,7 +320,7 @@ class _TractionPageState extends State<TractionPage> {
   // -------- UI --------
   @override
   Widget build(BuildContext context) {
-    final k = _leniencyScale();
+    // final k = _leniencyScale();
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -330,9 +330,12 @@ class _TractionPageState extends State<TractionPage> {
               padding: const EdgeInsets.only(top: 50), // <-- espace en haut
               child: ExerciseCard(
                 title: "NATH A FOND",
-                bestTime: "00:45",
-                time: inRest ? "$restRemaining s" : "--:--",
+                bestTime: null,
+                time: null,
                 repetitions: currentReps,
+                series: currentSet,
+                totalRepetitions: plan.repsPerSet,
+                totalSeries: plan.sets,
                 leftImage: "assets/images/guepard.png",
                 rightImage: "assets/images/mesange.png",
               ),
@@ -403,13 +406,7 @@ class _TractionPageState extends State<TractionPage> {
                       ),
                     ],
                     const SizedBox(height: 16),
-                    Text(
-                      'phase=$_phase val=${val.toStringAsFixed(2)} '
-                      'base=${base.toStringAsFixed(2)} k=${k.toStringAsFixed(2)}',
-                      textAlign: TextAlign.center,
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
+
                   ],
                 ),
               ),

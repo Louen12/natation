@@ -5,6 +5,9 @@ class ExerciseCard extends StatelessWidget {
   final String? bestTime;
   final String? time;
   final int? repetitions;
+  final int? totalRepetitions;
+  final int? series;
+  final int? totalSeries;
   final String? leftImage;
   final String? rightImage;
   final Color backgroundColor;
@@ -15,6 +18,9 @@ class ExerciseCard extends StatelessWidget {
     this.bestTime,
     this.time,
     this.repetitions,
+    this.totalRepetitions,
+    this.series,
+    this.totalSeries,
     this.leftImage,
     this.rightImage,
     this.backgroundColor = const Color(0xFFFF6200),
@@ -92,11 +98,29 @@ class ExerciseCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                  if (series != null)
+                    Column(
+                      children: [
+                        Text(
+                          "$series / $totalSeries",
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'DynaPuff',
+                          ),
+                        ),
+                        const Text(
+                          "Reps",
+                          style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
+                        ),
+                      ],
+                    ),
                   if (repetitions != null)
                     Column(
                       children: [
                         Text(
-                          "$repetitions",
+                          "$repetitions / $totalRepetitions",
                           style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
@@ -140,18 +164,18 @@ class ExerciseCardClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
     const radius = 20.0;
-    
+
     // Point de départ : coin supérieur gauche avec arrondi
     path.moveTo(radius, 0);
-    
+
     // Côté supérieur droit avec arrondi
     path.lineTo(size.width - radius, 0);
     path.quadraticBezierTo(size.width, 0, size.width, radius);
-    
+
     // Côté droit jusqu'au coin inférieur droit avec arrondi
     path.lineTo(size.width, size.height - 40 - radius);
     path.quadraticBezierTo(size.width, size.height - 40, size.width - radius, size.height - 40);
-    
+
     // Coin inférieur droit qui remonte vers le pic central
     path.quadraticBezierTo(
       size.width * 0.75, // Point de contrôle horizontal
@@ -159,7 +183,7 @@ class ExerciseCardClipper extends CustomClipper<Path> {
       size.width * 0.5, // Point final au centre
       size.height, // Hauteur finale (pic vers le bas)
     );
-    
+
     // Coin inférieur gauche qui remonte vers le pic central
     path.quadraticBezierTo(
       size.width * 0.25, // Point de contrôle horizontal
@@ -167,16 +191,16 @@ class ExerciseCardClipper extends CustomClipper<Path> {
       radius, // Point final au coin gauche (avec arrondi)
       size.height - 40, // Hauteur finale (même proportion que le côté droit)
     );
-    
+
     // Arrondi du coin inférieur gauche
     path.quadraticBezierTo(0, size.height - 40, 0, size.height - 40 - radius);
 
-    
+
     // Côté gauche jusqu'au coin supérieur gauche avec arrondi
     path.lineTo(0, radius);
     path.quadraticBezierTo(0, 0, radius, 0);
-    
-    
+
+
     path.close();
     return path;
   }
