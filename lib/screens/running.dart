@@ -206,6 +206,10 @@ class _RunningScreenState extends State<RunningScreen> {
     _posSub?.cancel();
     super.dispose();
   }
+import '../widgets/vico_header.dart';
+
+class RunningScreen extends StatelessWidget {
+  const RunningScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
