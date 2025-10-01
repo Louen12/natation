@@ -5,6 +5,7 @@ import '../models/traction.dart';
 import '../services/traction_sensor_service.dart';
 import '../widgets/tjtq_circle_button.dart';
 import '../widgets/tjtq_card.dart';
+import '../widgets/tjtq_congrats_popup.dart';
 
 /// Machine à états pour une traction:
 /// idle -> descent -> bottom -> ascent -> rep validée
@@ -324,28 +325,27 @@ class _TractionPageState extends State<TractionPage> {
 
   // Fin d’une série: soit fin de séance, soit démarrage du repos
   void _onSetFinished() {
-    _sub?.cancel();
-    if (currentSet >= plan.sets) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Bravo'),
-          content: const Text('Tu as terminé toutes les séries !'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _stopTraction();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      _startRest();
-    }
+  _sub?.cancel();
+  if (currentSet >= plan.sets) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false, 
+      backgroundColor: Colors.transparent,
+      builder: (_) => CongratsPopup(
+        title: "GOOD JOB!",
+        stars: 5, 
+        buttonText: "team VICO",
+        onClose: () {
+          Navigator.pop(context); 
+          _stopTraction();  
+        },
+      ),
+    );
+  } else {
+    _startRest();
   }
+}
+
 
   // Lance le repos entre deux séries
   void _startRest() {
