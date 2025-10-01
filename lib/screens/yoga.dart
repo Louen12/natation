@@ -121,7 +121,7 @@ class _YogaPageState extends State<YogaPage> {
 
   Future<void> _loadExercise() async {
     try {
-      final jsonStr = await rootBundle.loadString('db.json');
+      final jsonStr = await rootBundle.loadString('assets/db.json');
       final Map<String, dynamic> root = json.decode(jsonStr) as Map<
           String,
           dynamic>;
