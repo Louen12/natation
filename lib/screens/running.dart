@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/vico_header.dart';
 
 class RunningScreen extends StatelessWidget {
   const RunningScreen({super.key});
@@ -9,13 +10,21 @@ class RunningScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Course à pied'),
       ),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text(
-            "Bienvenue sur la page 'Course à pied'!\n\nContenu à venir...",
-            textAlign: TextAlign.center,
-          ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: const [
+            VicoHeader(), 
+
+            SizedBox(height: 20),
+
+            Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "Bienvenue sur la page 'Course à pied'!\n\nContenu à venir...",
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
         ),
       ),
     );
