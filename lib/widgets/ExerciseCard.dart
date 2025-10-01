@@ -23,7 +23,7 @@ class ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 20 , vertical: 80),
       clipBehavior: Clip.none,
       child: Stack(
         clipBehavior: Clip.none,
@@ -33,7 +33,7 @@ class ExerciseCard extends StatelessWidget {
             clipper: ExerciseCardClipper(),
             child: Container(
               padding: const EdgeInsets.all(24),
-              height: 220,
+              height: 200,
               decoration: BoxDecoration(
                 color: backgroundColor,
               ),
@@ -45,11 +45,11 @@ class ExerciseCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 32,
                   fontFamily: 'DynaPuff',
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -60,7 +60,7 @@ class ExerciseCard extends StatelessWidget {
                           bestTime!,
                           style: const TextStyle(
                             fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                             fontFamily: 'DynaPuff',
                           ),
@@ -81,7 +81,7 @@ class ExerciseCard extends StatelessWidget {
                           time!,
                           style: const TextStyle(
                             fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                             fontFamily: 'DynaPuff',
                           ),
@@ -99,7 +99,7 @@ class ExerciseCard extends StatelessWidget {
                           "$repetitions",
                           style: const TextStyle(
                             fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                             fontFamily: 'DynaPuff',
                           ),
@@ -116,18 +116,18 @@ class ExerciseCard extends StatelessWidget {
           ),
             ),
           ),
-          // Images qui débordent (devant la carte)
+          
           if (leftImage != null)
             Positioned(
               top: -70,
-              left: -30,
-              child: Image.asset(leftImage!, width: 160),
+              left: -40,
+              child: Image.asset(leftImage!, width: 180),
             ),
           if (rightImage != null)
             Positioned(
               top: -70,
               right: -40,
-              child: Image.asset(rightImage!, width: 160),
+              child: Image.asset(rightImage!, width: 180),
             ),
         ],
       ),

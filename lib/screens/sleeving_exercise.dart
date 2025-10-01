@@ -15,7 +15,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       appBar: AppBar(title: const Text('Exercice de gainage')),
       body: Center(
         child: ExerciseCard(
-          title: "Prince de gloire",
+          title: "4 couleurs",
           bestTime: "00:45",
           time: "-:--",
           repetitions: 3,
