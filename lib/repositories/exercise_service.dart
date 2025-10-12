@@ -29,9 +29,9 @@ class ExerciseProvider {
   }
 
   Future<List<Exercise>> getAllExercises() async {
-    Exercise a = new Exercise(name: "pompe", reps: 4, steps: 5, rest: 10, isFinished: false);
-    Exercise b = new Exercise(name: "abdo", reps: 3, steps: 6, rest: 10, isFinished: false);
-    Exercise c = new Exercise(name: "course", reps: 2, steps: 7, rest: 10, isFinished: false);
+    Exercise a = Exercise(name: "pompe", reps: 4, steps: 5, rest: 10, isFinished: false);
+    Exercise b = Exercise(name: "abdo", reps: 3, steps: 6, rest: 10, isFinished: false);
+    Exercise c = Exercise(name: "course", reps: 2, steps: 7, rest: 10, isFinished: false);
     Map<String, dynamic> mapa = a.toMap();
     Map<String, dynamic> mapb = b.toMap();
     Map<String, dynamic> mapc = c.toMap();
