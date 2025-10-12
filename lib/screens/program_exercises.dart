@@ -50,15 +50,20 @@ class _ProgramExercisesState extends State<ProgramExercises> {
               return Center(child: Text('No users found'));
             } else {
               print("nb User ${snapshot.data!.length}");
-              return ListView.builder(
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  Exercise exercise = snapshot.data![index];
-                  return ExerciseWidget(
-                    exercise: exercise,
-                    action: false
-                  );
-                },
+              return Column(
+                  children: [
+                    Text('Header'),
+                    ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      Exercise exercise = snapshot.data![index];
+                      return ExerciseWidget(
+                        exercise: exercise,
+                        action: false
+                      );
+                    },
+                  )
+                ]
               );
             }
           }
