@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:natation/screens/bay_program_activity.dart';
+import 'package:natation/screens/program_exercises.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -21,7 +21,7 @@ class MainApp extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const BayProgramActivity(),
+                builder: (context) => const ProgramExercises(),
               ),
             );
           },
