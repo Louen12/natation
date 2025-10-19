@@ -26,13 +26,14 @@ class _ProgramExercisesState extends State<ProgramExercises> {
   @override
   void initState() {
     super.initState();
-    //exercisesFuture = _initializeDatabaseAndGetExercises();
+    exercisesFuture = _initializeDatabaseAndGetExercises();
   }
   Future<List<Exercise>> _initializeDatabaseAndGetExercises() async {
     var databasesPath = await getDatabasesPath();
     String path = join(databasesPath, 'user.db');
     ExerciseProvider userProvider = ExerciseProvider();
-    //await userProvider.open(path);
+    await userProvider.open(path);
+    await userProvider.fillDatabase();
     return userProvider.getAllExercises();
   }
 
@@ -40,7 +41,7 @@ class _ProgramExercisesState extends State<ProgramExercises> {
   Widget build(BuildContext context) {
     return Scaffold(
         body: FutureBuilder<List<Exercise>>(
-          future: _initializeDatabaseAndGetExercises(),
+          future: exercisesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
@@ -49,19 +50,21 @@ class _ProgramExercisesState extends State<ProgramExercises> {
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Center(child: Text('No users found'));
             } else {
-              print("nb User ${snapshot.data!.length}");
               return Column(
                   children: [
                     Text('Header'),
-                    ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      Exercise exercise = snapshot.data![index];
-                      return ExerciseWidget(
-                        exercise: exercise,
-                        action: false
-                      );
-                    },
+                    Expanded(child:
+                      ListView.builder(
+                        scrollDirection:  Axis.vertical,
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          Exercise exercise = snapshot.data![index];
+                          return ExerciseWidget(
+                            exercise: exercise,
+                            action: exercise.isFinished
+                          );
+                        },
+                      ),
                   )
                 ]
               );

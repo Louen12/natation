@@ -16,7 +16,7 @@ class Exercise {
       reps: map['reps'],
       steps : map['steps'],
       rest : map['rest'],
-      isFinished : map['isFinished'],
+      isFinished : map['isFinished'] == 1 ? true : false,
     );
 
 
@@ -28,7 +28,7 @@ class Exercise {
       "reps": reps,
       "steps": steps,
       "rest": rest,
-      "isFinished": isFinished
+      "isFinished": isFinished ? 1:0,
     };
     if (id != null) {
       map['id'] = id;
