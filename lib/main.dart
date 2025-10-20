@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:natation/screens/jump_exercise.dart';
 import 'screens/sleeving_exercise.dart';
 import 'widgets/ExerciseCard.dart';
 import 'widgets/draggable_nav_bar.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool isPlaying = false;
+  bool isJumpPage = false;
   String exerciseTitle = "Titre de l'exercice";
   final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
 
@@ -34,7 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color.fromARGB(255, 219, 219, 219),
       body: Stack(
         children: [
-          Center(child: SleevingExercisePage(cardKey: _cardKey)),
+          Center(
+            child: isJumpPage
+                ? JumpExercisePage(cardKey: _cardKey, isPlaying: isPlaying)
+                : SleevingExercisePage(
+                    cardKey: _cardKey,
+                    showInstructions:
+                        !isPlaying,
+                  ),
+          ),
+
           DraggableNavBar(
             isPlaying: isPlaying,
             exerciseTitle: exerciseTitle,
@@ -43,7 +54,14 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() => isPlaying = !isPlaying);
             },
             onStop: () => setState(() => isPlaying = false),
-            onNext: () => setState(() => exerciseTitle = "Exercice suivant"),
+
+            onNext: () {
+              setState(() {
+                isJumpPage = !isJumpPage;
+                exerciseTitle =
+                    isJumpPage ? "Jump Exercise" : "Gainage Latéral";
+              });
+            },
           ),
         ],
       ),

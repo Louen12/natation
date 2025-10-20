@@ -68,7 +68,6 @@ class _DraggableNavBarState extends State<DraggableNavBar> {
                 ),
               ),
 
-              // Boutons et titre
               Positioned(
                 bottom: 20,
                 left: 0,
@@ -92,9 +91,11 @@ class _DraggableNavBarState extends State<DraggableNavBar> {
                           onPressed: widget.onPlayPause,
                         ),
                         _buildSvgButton(
-                          assetPath: 'assets/gif.svg',
+                          gifUrl:
+                              'https://media.tenor.com/OnDzyRpUwGgAAAAj/run-run-run-brawl-stars-el-primo-gif.gif', // EL PRRRRRRRRRRRIIIIIIIIIIIIIIIIIMO
                           color: const Color(0xFF454545),
                           onPressed: widget.onNext,
+                          size: 65,
                         ),
                       ],
                     ),
@@ -118,23 +119,38 @@ class _DraggableNavBarState extends State<DraggableNavBar> {
   }
 
   Widget _buildSvgButton({
-    required String assetPath,
+    String? assetPath,
+    String? gifUrl,
     required Color color,
     required VoidCallback onPressed,
+    double size = 30,
   }) {
+    final double buttonPadding = gifUrl != null
+        ? 10
+        : 24;
+
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         shape: const CircleBorder(),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(buttonPadding),
         backgroundColor: color,
       ),
-      child: SvgPicture.asset(
-        assetPath,
-        width: 30,
-        height: 30,
-        color: Colors.white,
-      ),
+      child: gifUrl != null
+          ? ClipOval(
+              child: Image.network(
+                gifUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+              ),
+            )
+          : SvgPicture.asset(
+              assetPath!,
+              width: size,
+              height: size,
+              color: Colors.white,
+            ),
     );
   }
 }
