@@ -15,10 +15,27 @@ class JumpExercisePage extends StatefulWidget {
   });
 
   @override
-  State<JumpExercisePage> createState() => _JumpExercisePageState();
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      child: ChangeNotifierProvider(
+        create: (_) => JumpService()..start(),
+        child: const _JumpView(),
+      ),
+    );
+  }
 }
 
-class _JumpExercisePageState extends State<JumpExercisePage> {
+// Juste un wrapper pour ne pas polluer ton arbre avec le provider scope
+class ProviderScope extends StatelessWidget {
+  final Widget child;
+  const ProviderScope({super.key, required this.child});
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+class _JumpView extends StatelessWidget {
+  const _JumpView();
+
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
