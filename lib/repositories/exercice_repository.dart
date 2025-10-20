@@ -14,6 +14,25 @@ class ExerciseRepository {
     );
   }
 
+  Future<void> seedIfEmpty(List<Exercise> items) async {
+    final db = await _db;
+    final cnt = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM exercises'),
+    ) ??
+        0;
+    if (cnt == 0) {
+      final batch = db.batch();
+      for (final e in items) {
+        batch.insert(
+          'exercises',
+          e.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      await batch.commit(noResult: true);
+    }
+  }
+
   Future<Exercise?> getById(int id) async {
     final db = await _db;
     final rows = await db.query(
@@ -41,5 +60,20 @@ class ExerciseRepository {
     final db = await _db;
     await db.delete('positions');
     await db.delete('exercises');
+  }
+
+  Future<void> setDone(int id, bool done) async {
+    final db = await _db;
+    await db.update(
+      'exercises',
+      {'is_done': done ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> resetAllDone() async {
+    final db = await _db;
+    await db.update('exercises', {'is_done': 0});
   }
 }

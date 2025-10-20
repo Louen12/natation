@@ -5,9 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
   static final AppDatabase _instance = AppDatabase._internal();
-
   AppDatabase._internal();
-
   factory AppDatabase() => _instance;
 
   static const _dbName = 'fitness.db';
@@ -35,6 +33,9 @@ class AppDatabase {
         await _createSchema(db);
       },
       onUpgrade: (db, oldV, newV) async {},
+      onOpen: (db) async {
+        await _ensureSchemaCompatibility(db);
+      },
     );
     return db;
   }
@@ -53,7 +54,8 @@ class AppDatabase {
         jump_number INTEGER,
         height_objective INTEGER,
         time INTEGER,
-        type TEXT
+        type TEXT,
+        is_done INTEGER NOT NULL DEFAULT 0
       );
     ''');
 
@@ -71,5 +73,21 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX idx_positions_exercise_id ON positions(exercise_id);',
     );
+  }
+
+  /// ajoute la colonne is_done si absente
+  Future<void> _ensureSchemaCompatibility(Database db) async {
+    // Vérifie la présence de la colonne is_done
+    final cols = await db.rawQuery('PRAGMA table_info(exercises);');
+    final hasIsDone = cols.any((c) {
+      final name = (c['name'] ?? '').toString();
+      return name == 'is_done';
+    });
+
+    if (!hasIsDone) {
+      await db.execute(
+        'ALTER TABLE exercises ADD COLUMN is_done INTEGER NOT NULL DEFAULT 0;',
+      );
+    }
   }
 }

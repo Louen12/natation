@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform, kIsWeb;
+import 'package:natation/models/exercise.dart';
+import 'package:natation/repositories/exercice_repository.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 class YogaPositionDto {
@@ -45,15 +47,18 @@ class YogaExerciseDto {
     final exercices = root['exercice'];
     if (exercices is List) {
       final yogaEntry = exercices.firstWhere(
-            (e) =>
-        (e is Map<String, dynamic>) &&
+        (e) =>
+            (e is Map<String, dynamic>) &&
             ((e['name'] == 'Yoga') || (e['position'] != null)),
         orElse: () => const {},
       );
       if (yogaEntry is Map<String, dynamic>) {
-        final positions = (yogaEntry['position'] as List?)
-            ?.map((p) => YogaPositionDto.fromJson(p as Map<String, dynamic>))
-            .toList() ??
+        final positions =
+            (yogaEntry['position'] as List?)
+                ?.map(
+                  (p) => YogaPositionDto.fromJson(p as Map<String, dynamic>),
+                )
+                .toList() ??
             const <YogaPositionDto>[];
         return YogaExerciseDto(positions: positions);
       }
@@ -64,10 +69,9 @@ class YogaExerciseDto {
   int get totalPoseSeconds =>
       positions.fold<int>(0, (acc, p) => acc + p.timeSeconds);
 
-  int get maxPoseSeconds =>
-      positions.isEmpty
-          ? 0
-          : positions.map((p) => p.timeSeconds).reduce(math.max);
+  int get maxPoseSeconds => positions.isEmpty
+      ? 0
+      : positions.map((p) => p.timeSeconds).reduce(math.max);
 }
 
 class YogaPage extends StatefulWidget {
@@ -80,7 +84,13 @@ class YogaPage extends StatefulWidget {
 }
 
 class _YogaPageState extends State<YogaPage> {
-  YogaExerciseDto? _exercise;
+  final _repo = ExerciseRepository();
+
+  /// Exercice métier (pour récupérer l'id, etc.) passé par Navigator
+  Exercise? exercise;
+
+  /// Données Yoga (positions) chargées depuis le JSON
+  YogaExerciseDto? _yoga;
   String? _loadError;
 
   // Suivi de l'entraînement
@@ -89,6 +99,7 @@ class _YogaPageState extends State<YogaPage> {
   AccelerometerEvent? _prevAccel;
 
   bool _isRunning = false;
+  bool _isCompleted = false; // évite les doubles appels
   int _currentPoseIndex = -1;
   int _remainingInPose = 0; // secondes restantes pour la pose courante
 
@@ -99,18 +110,31 @@ class _YogaPageState extends State<YogaPage> {
   int _abruptEvents = 0;
 
   // Seuil de variation (m/s^2) entre deux échantillons pour considérer un mouvement brusque
-  // Ajustable si besoin
   static const double _dvThreshold = 5.0;
 
   bool get _supportsAccelerometer =>
       !kIsWeb &&
-          (defaultTargetPlatform == TargetPlatform.android ||
-              defaultTargetPlatform == TargetPlatform.iOS);
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   @override
   void initState() {
     super.initState();
     _loadExercise();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Récupère l'exercice métier passé via Navigator (pour l'id)
+    if (exercise == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Exercise) {
+        exercise = args;
+      } else {
+        debugPrint('Aucun exercice transmis à YogaPage');
+      }
+    }
   }
 
   @override
@@ -122,12 +146,11 @@ class _YogaPageState extends State<YogaPage> {
   Future<void> _loadExercise() async {
     try {
       final jsonStr = await rootBundle.loadString('assets/db.json');
-      final Map<String, dynamic> root = json.decode(jsonStr) as Map<
-          String,
-          dynamic>;
-      final exercise = YogaExerciseDto.fromRootJson(root);
+      final Map<String, dynamic> root =
+          json.decode(jsonStr) as Map<String, dynamic>;
+      final parsed = YogaExerciseDto.fromRootJson(root);
       setState(() {
-        _exercise = exercise;
+        _yoga = parsed;
         _loadError = null;
       });
     } catch (e) {
@@ -138,8 +161,8 @@ class _YogaPageState extends State<YogaPage> {
   }
 
   void _startExercise() {
-    final ex = _exercise;
-    if (ex == null || ex.positions.isEmpty) return;
+    final ex = _yoga;
+    if (ex == null || ex.positions.isEmpty || _isCompleted) return;
 
     _stopTracking(); // réinitialise si on relance
 
@@ -172,7 +195,6 @@ class _YogaPageState extends State<YogaPage> {
           _prevAccel = event;
         });
       } catch (_) {
-        // Plugin indisponible sur cette plateforme
         _accelSub = null;
       }
     } else {
@@ -203,7 +225,7 @@ class _YogaPageState extends State<YogaPage> {
             _remainingInPose = ex.positions[_currentPoseIndex].timeSeconds;
           });
         } else {
-          _finishExercise();
+          _finishExercise(); // fin automatique
         }
       }
     });
@@ -216,7 +238,12 @@ class _YogaPageState extends State<YogaPage> {
     _accelSub = null;
   }
 
+  /// Fin d'exercice (appelée automatiquement ou via bouton "Terminer").
+  /// Ne bloque pas l'UI, et évite de pop avant d'afficher le résultat.
   void _finishExercise() {
+    if (_isCompleted) return;
+    _isCompleted = true;
+
     _stopTracking();
     setState(() {
       _isRunning = false;
@@ -225,6 +252,17 @@ class _YogaPageState extends State<YogaPage> {
     final total = _smoothSeconds + _unsmoothSeconds;
     final success = total == 0 ? 0.0 : (_smoothSeconds / total) * 100.0;
 
+    // Met à jour la BDD sans bloquer
+    final ex = exercise;
+    if (ex != null) {
+      unawaited(_repo.setDone(ex.id, true));
+    } else {
+      debugPrint('Impossible de marquer comme fait: exercise == null');
+    }
+
+    if (!mounted) return;
+
+    // Affiche le résultat PUIS retourne à la page précédente en signalant le changement
     showDialog<void>(
       context: context,
       builder: (ctx) {
@@ -239,7 +277,7 @@ class _YogaPageState extends State<YogaPage> {
               Text('Mouvements brusques détectés: $_abruptEvents'),
               const SizedBox(height: 12),
               const Text(
-                'Note: plus il y a eu de mouvements brusques, plus le score diminue. ',
+                'Note: plus il y a eu de mouvements brusques, plus le score diminue.',
               ),
             ],
           ),
@@ -251,7 +289,11 @@ class _YogaPageState extends State<YogaPage> {
           ],
         );
       },
-    );
+    ).then((_) {
+      if (mounted) {
+        Navigator.pop(context, true); // ProgramPage rafraîchira
+      }
+    });
   }
 
   String _formatSeconds(int s) {
@@ -261,18 +303,18 @@ class _YogaPageState extends State<YogaPage> {
     return '${minutes}m ${seconds.toString().padLeft(2, '0')}s';
   }
 
-  Widget _buildBars(YogaExerciseDto exercise) {
-    final maxS = math.max(1, exercise.maxPoseSeconds);
+  Widget _buildBars(YogaExerciseDto yoga) {
+    final maxS = math.max(1, yoga.maxPoseSeconds);
     return Column(
       children: [
-        for (int i = 0; i < exercise.positions.length; i++)
+        for (int i = 0; i < yoga.positions.length; i++)
           _BarRow(
-            name: exercise.positions[i].name,
-            seconds: exercise.positions[i].timeSeconds,
-            portion: exercise.positions[i].timeSeconds / maxS,
+            name: yoga.positions[i].name,
+            seconds: yoga.positions[i].timeSeconds,
+            portion: yoga.positions[i].timeSeconds / maxS,
             isActive: _isRunning && i == _currentPoseIndex,
-            label: '${exercise.positions[i].name} — ${_formatSeconds(
-                exercise.positions[i].timeSeconds)}',
+            label:
+                '${yoga.positions[i].name} — ${_formatSeconds(yoga.positions[i].timeSeconds)}',
           ),
       ],
     );
@@ -280,80 +322,81 @@ class _YogaPageState extends State<YogaPage> {
 
   @override
   Widget build(BuildContext context) {
-    final exercise = _exercise;
+    final yoga = _yoga;
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: _loadError != null
             ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                  Icons.error_outline, size: 48, color: Colors.redAccent),
-              const SizedBox(height: 12),
-              Text(
-                _loadError!,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Assurez-vous que db.json est déclaré comme asset dans pubspec.yaml.',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        )
-            : exercise == null
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.redAccent,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(_loadError!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Assurez-vous que db.json est déclaré comme asset dans pubspec.yaml.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            : yoga == null
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Positions',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildBars(exercise),
-              const SizedBox(height: 24),
-              _StatusPanel(
-                isRunning: _isRunning,
-                currentPoseName: _currentPoseIndex >= 0
-                    ? exercise.positions[_currentPoseIndex].name
-                    : '-',
-                remainingSeconds: _remainingInPose,
-                smoothSeconds: _smoothSeconds,
-                unsmoothSeconds: _unsmoothSeconds,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: !_isRunning ? _startExercise : null,
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('Commencer'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Positions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isRunning
-                          ? () {
-                        _finishExercise();
-                      }
-                          : null,
-                      icon: const Icon(Icons.stop),
-                      label: const Text('Terminer'),
+                    const SizedBox(height: 12),
+                    _buildBars(yoga),
+                    const SizedBox(height: 24),
+                    _StatusPanel(
+                      isRunning: _isRunning,
+                      currentPoseName: _currentPoseIndex >= 0
+                          ? yoga.positions[_currentPoseIndex].name
+                          : '-',
+                      remainingSeconds: _remainingInPose,
+                      smoothSeconds: _smoothSeconds,
+                      unsmoothSeconds: _unsmoothSeconds,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (!_isRunning && !_isCompleted)
+                                ? _startExercise
+                                : null,
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text('Commencer'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isRunning ? _finishExercise : null,
+                            icon: const Icon(Icons.stop),
+                            label: const Text('Terminer'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -453,15 +496,19 @@ class _StatusPanel extends StatelessWidget {
           Row(
             children: [
               const Text(
-                  'Statut: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                'Statut: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text(isRunning ? 'En cours' : 'En attente'),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('Pose actuelle: ',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Pose actuelle: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Expanded(
                 child: Text(
                   currentPoseName,
@@ -474,20 +521,26 @@ class _StatusPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('Temps restant: ',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Temps restant: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text(_formatStatic(remainingSeconds)),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('Secondes douces: ',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Secondes douces: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text('$smoothSeconds'),
               const SizedBox(width: 16),
-              const Text('Secondes brusques: ',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Secondes brusques: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text('$unsmoothSeconds'),
             ],
           ),

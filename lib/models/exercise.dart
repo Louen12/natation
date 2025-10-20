@@ -12,6 +12,8 @@ class Exercise {
   final int? heightObjective; // cm
   final int? time; // sec
   final String? type;
+  final bool? _isDone;
+  bool get isDone => _isDone ?? false;
 
   Exercise({
     required this.id,
@@ -26,9 +28,9 @@ class Exercise {
     this.heightObjective,
     this.time,
     this.type,
-  });
+    bool isDone = false,
+  }) : _isDone = isDone;
 
-  // Helpers de parsing
   static int? _toInt(dynamic v) {
     if (v == null) return null;
     if (v is int) return v;
@@ -45,6 +47,17 @@ class Exercise {
     return null;
   }
 
+  static bool _toBoolDone(dynamic v) {
+    if (v == null) return false;
+    if (v is bool) return v;
+    if (v is int) return v == 1;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      return s == '1' || s == 'true' || s == 't' || s == 'yes' || s == 'y';
+    }
+    return false;
+  }
+
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
       id: _toInt(json['id']) ?? 0,
@@ -59,6 +72,7 @@ class Exercise {
       heightObjective: _toInt(json['height_objective']),
       time: _toInt(json['time']),
       type: json['type']?.toString(),
+      isDone: false,
     );
   }
 
@@ -75,6 +89,7 @@ class Exercise {
     'height_objective': heightObjective,
     'time': time,
     'type': type,
+    'is_done': isDone ? 1 : 0,
   };
 
   factory Exercise.fromMap(Map<String, dynamic> map) => Exercise(
@@ -90,5 +105,6 @@ class Exercise {
     heightObjective: map['height_objective'] as int?,
     time: map['time'] as int?,
     type: map['type'] as String?,
+    isDone: _toBoolDone(map['is_done']),
   );
 }
