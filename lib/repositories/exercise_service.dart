@@ -35,7 +35,7 @@ class ExerciseProvider {
 
   Future fillDatabase() async{
     Exercise a = Exercise(name: "pompe", reps: 4, steps: 5, rest: 10, isFinished: false);
-    Exercise b = Exercise(name: "abdo", reps: 3, steps: 6, rest: 10, isFinished: false);
+    Exercise b = Exercise(name: "MVA", reps: 3, steps: 6, rest: 10, isFinished: true);
     Exercise c = Exercise(name: "course", reps: 2, steps: 7, rest: 10, isFinished: false);
     insert(a);
     insert(b);
