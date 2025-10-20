@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:natation/models/run_session.dart';
 
+/// Carte d'affichage pour un exercice ou une session de course.
+/// Commentaires légers pour expliquer les parties principales.
 class ExerciseCard extends StatelessWidget {
+  // Données optionnelles: session de course ou paramètres d'exercice
   final RunSession? runSession;
   final String title;
   final String? bestTime;
@@ -39,129 +42,133 @@ class ExerciseCard extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Carte avec ClipPath
+          // Carte principale découpée avec un clipper personnalisé
           ClipPath(
             clipper: ExerciseCardClipper(),
             child: Container(
               padding: const EdgeInsets.all(24),
-              height: 220,
+              height: 240,
               decoration: BoxDecoration(color: backgroundColor),
               child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontFamily: 'DynaPuff',
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (bestTime != null)
-                    Column(
+                  // Titre de la carte
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontFamily: 'DynaPuff',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  /// Si c’est une session de course, on affiche les stats de course
+                  if (runSession != null) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Text(
-                          bestTime!,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
+                        // Distance parcourue en km
+                        Column(
+                          children: [
+                            Text(
+                              "${runSession!.distanceKm.toStringAsFixed(2)} km",
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                            const Text(
+                              "Distance",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                          ],
                         ),
-                        const Text(
-                          "Best Time",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
+                        // Temps écoulé format mm:ss
+                        Column(
+                          children: [
+                            Text(
+                              "${runSession!.elapsed.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(runSession!.elapsed.inSeconds.remainder(60)).toString().padLeft(2, '0')}",
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                            const Text(
+                              "Temps",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Indicateur de réussite de l'objectif
+                        Column(
+                          children: [
+                            Icon(
+                              runSession!.success
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              color: const Color.fromARGB(255, 255, 255, 255),
+                              size: 36,
+                            ),
+                            const Text(
+                              "Objectif",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  if (time != null)
-                    Column(
+                    const SizedBox(height: 10),
+                    // Description de l'objectif (distance + durée)
+                    Text(
+                      "Objectif : ${runSession!.plannedDistanceMeters / 1000} km en ${runSession!.maxDurationSeconds ~/ 60} min",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        fontFamily: 'DynaPuff',
+                      ),
+                    ),
+                  ]
+                  /// Sinon on affiche les autres types d’exercices (réps, séries, temps...)
+                  else ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Text(
-                          time!,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
+                        if (bestTime != null)
+                          _buildColumn(bestTime!, "Best Time"),
+                        if (time != null) _buildColumn(time!, "Time"),
+                        if (series != null)
+                          _buildColumn("$series / $totalSeries", "Series"),
+                        if (repos != null && repos != 0)
+                          _buildColumn("$repos", "Repos"),
+                        if (repetitions != null)
+                          _buildColumn(
+                            "$repetitions / $totalRepetitions",
+                            "Reps",
                           ),
-                        ),
-                        const Text(
-                          "Time",
-                          style: TextStyle(color: Colors.white , fontFamily: 'DynaPuff'),
-                        ),
                       ],
                     ),
-                  if (series != null)
-                    Column(
-                      children: [
-                        Text(
-                          "$series / $totalSeries",
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
-                        ),
-                        const Text(
-                          "Series",
-                          style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
-                        ),
-                      ],
-                    ),
-                  if (repos != 0)
-                    Column(
-                      children: [
-                        Text(
-                          "$repos",
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
-                        ),
-                        const Text(
-                          "Repos",
-                          style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
-                        ),
-                      ],
-                    ),
-                  if (repetitions != null)
-                    Column(
-                      children: [
-                        Text(
-                          "$repetitions / $totalRepetitions",
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'DynaPuff',
-                          ),
-                        ),
-                        const Text(
-                          "Reps",
-                          style: TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
-                        ),
-                      ],
-                    ),
+                  ],
                 ],
               ),
-            ],
-          ),
             ),
           ),
-          // Images qui débordent (devant la carte)
+
+          // Images décoratives positionnées en dehors de la carte
           if (leftImage != null)
             Positioned(
               top: -70,
@@ -178,55 +185,62 @@ class ExerciseCard extends StatelessWidget {
       ),
     );
   }
+
+  // Petit helper pour créer une colonne valeur + label
+  Widget _buildColumn(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontFamily: 'DynaPuff',
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontFamily: 'DynaPuff'),
+        ),
+      ],
+    );
+  }
 }
 
+/// Clipper personnalisé pour donner une forme arrondie et une encoche au bas
 class ExerciseCardClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
     const radius = 20.0;
 
-
-    // Point de départ : coin supérieur gauche avec arrondi
+    // chemin du contour avec coins arrondis et une courbe centrale en bas
     path.moveTo(radius, 0);
-
-
-    // Côté supérieur droit avec arrondi
     path.lineTo(size.width - radius, 0);
     path.quadraticBezierTo(size.width, 0, size.width, radius);
-
-
-    // Côté droit jusqu'au coin inférieur droit avec arrondi
     path.lineTo(size.width, size.height - 40 - radius);
-    path.quadraticBezierTo(size.width, size.height - 40, size.width - radius, size.height - 40);
-
-    // Coin inférieur droit qui remonte vers le pic central
     path.quadraticBezierTo(
-      size.width * 0.75, // Point de contrôle horizontal
-      size.height - 15, // Point de contrôle vertical (remonte)
-      size.width * 0.5, // Point final au centre
-      size.height, // Hauteur finale (pic vers le bas)
+      size.width,
+      size.height - 40,
+      size.width - radius,
+      size.height - 40,
     );
-
-
-    // Coin inférieur gauche qui remonte vers le pic central
     path.quadraticBezierTo(
-      size.width * 0.25, // Point de contrôle horizontal
-      size.height - 15, // Point de contrôle vertical (remonte)
-      radius, // Point final au coin gauche (avec arrondi)
-      size.height - 40, // Hauteur finale (même proportion que le côté droit)
+      size.width * 0.75,
+      size.height - 15,
+      size.width * 0.5,
+      size.height,
     );
-
-
-    // Arrondi du coin inférieur gauche
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height - 15,
+      radius,
+      size.height - 40,
+    );
     path.quadraticBezierTo(0, size.height - 40, 0, size.height - 40 - radius);
-
-
-    // Côté gauche jusqu'au coin supérieur gauche avec arrondi
     path.lineTo(0, radius);
     path.quadraticBezierTo(0, 0, radius, 0);
-
-
     path.close();
     return path;
   }
