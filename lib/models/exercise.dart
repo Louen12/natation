@@ -1,3 +1,5 @@
+import 'package:natation/screens/test_vma_screen.dart';
+
 class Exercise {
   int? id;
   String name;
@@ -34,5 +36,24 @@ class Exercise {
       map['id'] = id;
     }
     return map;
+  }
+
+  static dynamic getWidgetFromName(Exercise exercise){
+    switch(exercise.name){
+      case "MVA":
+        return TestVmaScreen();
+      case "Pompes":
+        return null;
+      case "Traction":
+        return null;
+      case "Yoga":
+        return null;
+      case "Course":
+        return null;
+      case "Saut":
+        return null;
+      case "Gainage":
+        return null;
+    }
   }
 }

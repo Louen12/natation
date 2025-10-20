@@ -21,7 +21,7 @@ class MainApp extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const ProgramExercises(),
+                builder: (context) => ProgramExercises(),
               ),
             );
           },

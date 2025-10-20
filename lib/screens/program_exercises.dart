@@ -52,7 +52,7 @@ class _ProgramExercisesState extends State<ProgramExercises> {
             } else {
               return Column(
                   children: [
-                    Text('Header'),
+                    Text('Programme'),
                     Expanded(child:
                       ListView.builder(
                         scrollDirection:  Axis.vertical,
