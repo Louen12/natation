@@ -40,7 +40,7 @@ class Exercise {
 
   static dynamic getWidgetFromName(Exercise exercise){
     switch(exercise.name){
-      case "MVA":
+      case "VMA":
         return TestVmaHomeScreen();
       case "Pompes":
         return null;
