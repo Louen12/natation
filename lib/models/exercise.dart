@@ -1,4 +1,4 @@
-import 'package:natation/screens/test_vma_screen.dart';
+import 'package:natation/screens/test_vma_home_screen.dart';
 
 class Exercise {
   int? id;
@@ -41,7 +41,7 @@ class Exercise {
   static dynamic getWidgetFromName(Exercise exercise){
     switch(exercise.name){
       case "MVA":
-        return TestVmaScreen();
+        return TestVmaHomeScreen();
       case "Pompes":
         return null;
       case "Traction":

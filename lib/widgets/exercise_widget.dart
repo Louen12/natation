@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:natation/models/exercise.dart';
-import 'package:natation/screens/test_vma_screen.dart';
+
 
 class ExerciseWidget extends StatelessWidget {
   final Exercise exercise;
