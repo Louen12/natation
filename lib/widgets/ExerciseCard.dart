@@ -69,7 +69,8 @@ class ExerciseCardState extends State<ExerciseCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 80),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      clipBehavior: Clip.none,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -77,38 +78,45 @@ class ExerciseCardState extends State<ExerciseCard> {
             clipper: ExerciseCardClipper(),
             child: Container(
               padding: const EdgeInsets.all(24),
-              height: 220,
+              height: 200,
               decoration: BoxDecoration(
                 color: widget.backgroundColor,
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     widget.title,
                     style: const TextStyle(
                       fontSize: 32,
                       fontFamily: 'DynaPuff',
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       if (widget.bestTime != null)
                         Column(
                           children: [
-                            Text(widget.bestTime!,
-                                style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontFamily: 'DynaPuff')),
-                            const Text("Best Time",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'DynaPuff')),
+                            Text(
+                              widget.bestTime!,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                            const Text(
+                              "Best Time",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
                           ],
                         ),
                       Column(
@@ -116,30 +124,40 @@ class ExerciseCardState extends State<ExerciseCard> {
                           Text(
                             formattedTime,
                             style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                fontFamily: 'DynaPuff'),
+                              fontSize: 26,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontFamily: 'DynaPuff',
+                            ),
                           ),
-                          const Text("Time",
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'DynaPuff')),
+                          const Text(
+                            "Time",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'DynaPuff',
+                            ),
+                          ),
                         ],
                       ),
                       if (widget.repetitions != null)
                         Column(
                           children: [
-                            Text("${widget.repetitions}",
-                                style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontFamily: 'DynaPuff')),
-                            const Text("Reps",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'DynaPuff')),
+                            Text(
+                              "${widget.repetitions}",
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
+                            const Text(
+                              "Reps",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'DynaPuff',
+                              ),
+                            ),
                           ],
                         ),
                     ],
@@ -151,14 +169,14 @@ class ExerciseCardState extends State<ExerciseCard> {
           if (widget.leftImage != null)
             Positioned(
               top: -70,
-              left: -30,
-              child: Image.asset(widget.leftImage!, width: 160),
+              left: -40,
+              child: Image.asset(widget.leftImage!, width: 180),
             ),
           if (widget.rightImage != null)
             Positioned(
               top: -70,
               right: -40,
-              child: Image.asset(widget.rightImage!, width: 160),
+              child: Image.asset(widget.rightImage!, width: 180),
             ),
         ],
       ),
@@ -171,43 +189,34 @@ class ExerciseCardClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
     const radius = 20.0;
-    
-    // Point de départ : coin supérieur gauche avec arrondi
+
     path.moveTo(radius, 0);
-    
-    // Côté supérieur droit avec arrondi
     path.lineTo(size.width - radius, 0);
     path.quadraticBezierTo(size.width, 0, size.width, radius);
-    
-    // Côté droit jusqu'au coin inférieur droit avec arrondi
+
     path.lineTo(size.width, size.height - 40 - radius);
-    path.quadraticBezierTo(size.width, size.height - 40, size.width - radius, size.height - 40);
-    
-    // Coin inférieur droit qui remonte vers le pic central
     path.quadraticBezierTo(
-      size.width * 0.75, // Point de contrôle horizontal
-      size.height - 15, // Point de contrôle vertical (remonte)
-      size.width * 0.5, // Point final au centre
-      size.height, // Hauteur finale (pic vers le bas)
-    );
-    
-    // Coin inférieur gauche qui remonte vers le pic central
+        size.width, size.height - 40, size.width - radius, size.height - 40);
+
     path.quadraticBezierTo(
-      size.width * 0.25, // Point de contrôle horizontal
-      size.height - 15, // Point de contrôle vertical (remonte)
-      radius, // Point final au coin gauche (avec arrondi)
-      size.height - 40, // Hauteur finale (même proportion que le côté droit)
+      size.width * 0.75,
+      size.height - 15,
+      size.width * 0.5,
+      size.height,
     );
-    
-    // Arrondi du coin inférieur gauche
+
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height - 15,
+      radius,
+      size.height - 40,
+    );
+
     path.quadraticBezierTo(0, size.height - 40, 0, size.height - 40 - radius);
 
-    
-    // Côté gauche jusqu'au coin supérieur gauche avec arrondi
     path.lineTo(0, radius);
     path.quadraticBezierTo(0, 0, radius, 0);
-    
-    
+
     path.close();
     return path;
   }

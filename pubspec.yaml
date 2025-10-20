@@ -10,6 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.1.0
+  provider: ^6.1.5+1
+  sensors_plus: ^7.0.0
+  flutter_tts: ^4.0.2
 
 dev_dependencies:
   flutter_test:
@@ -27,6 +30,5 @@ flutter:
   fonts:
     - family: DynaPuff
       fonts:
-        - asset: fonts/DynaPuff-Regular.ttf
-        - asset: fonts/DynaPuff-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/DynaPuff-Regular.ttf
+        - asset: assets/fonts/DynaPuff-Bold.ttf
