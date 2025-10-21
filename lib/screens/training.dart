@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/exercice.dart';
 import '../utils/exercice_loader.dart';
+import '../widgets/vico_header.dart';
 
 class TrainingListScreen extends StatelessWidget {
   const TrainingListScreen({super.key});
@@ -39,7 +40,10 @@ class TrainingListScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _BannerHeader(onAllSessions: () {}),
+                    const VicoHeader(
+                      temps: Duration.zero,
+                      distance: 0.0,
+                    ),
                     const SizedBox(height: 28),
                     Text(
                       'VOTRE PROGRAMME',
@@ -85,86 +89,6 @@ class TrainingListScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _BannerHeader extends StatelessWidget {
-  final VoidCallback onAllSessions;
-  const _BannerHeader({required this.onAllSessions});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 110,
-      width: double.infinity,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            top: 10,
-            child: CustomPaint(
-              painter: _BannerPainter(),
-            ),
-          ),
-          Positioned(
-            left: -10,
-            top: -10,
-            child: Image.asset(
-              'maquette/guepard.png',
-              width: 70,
-              height: 70,
-            ),
-          ),
-          Positioned(
-            right: -10,
-            top: -20,
-            child: Image.asset(
-              'maquette/mesange.png',
-              width: 80,
-              height: 80,
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: Text(
-                'NATH A FOND',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                    ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BannerPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFFFF6A00);
-    final w = size.width;
-    final h = 70.0;
-    final notchDepth = 14.0;
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(w, 0)
-      ..lineTo(w, h - 10)
-      ..lineTo(w / 2 + 70, h - 10)
-      ..lineTo(w / 2, h - 10 + notchDepth)
-      ..lineTo(w / 2 - 70, h - 10)
-      ..lineTo(0, h - 10)
-      ..close();
-    canvas.drawShadow(path, Colors.black45, 4, false);
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 Widget _buildExerciceSubtitle(Exercice ex) {

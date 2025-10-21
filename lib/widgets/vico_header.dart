@@ -33,7 +33,7 @@ class VicoHeader extends StatelessWidget {
       children: [
         // Fond orange
         Padding(
-          padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 0.0),  // marge de 30 à gauche et à droite
+          padding: const EdgeInsets.fromLTRB(30.0, 50.0, 30.0, 0.0),  // marge de 30 à gauche et à droite
           child: CustomPaint(
             painter: HeaderPainter(),
             child: Container(
@@ -46,27 +46,27 @@ class VicoHeader extends StatelessWidget {
         // Guépard flottant à gauche
         Positioned(
           left: 10,
-          top: 0,
+          top: 15,
           child: Image.asset(
             "maquette/guepard.png",
-            height: 120, // plus grand
+            height: 110, // plus grand
           ),
         ),
 
         // Mésange flottante à droite
         Positioned(
           right: 0,
-          top: 0,
+          top: 15,
           child: Image.asset(
             "maquette/mesange.png",
-            height: 120, // plus grand
+            height: 110, // plus grand
           ),
         ),
 
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 35),
+            const SizedBox(height: 60),
 
             // Images + titre
             Row(
@@ -110,7 +110,7 @@ class VicoHeader extends StatelessWidget {
         value,
         style: const TextStyle(
           fontFamily: 'DynaPuff',
-          fontSize: 20,
+          fontSize: 16,
           fontWeight: FontWeight.bold,
           color: Colors.white,
           ),
