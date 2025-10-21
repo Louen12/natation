@@ -95,13 +95,13 @@ class _Synthese4CouleursState extends State<Synthese4Couleurs> {
   Widget _getCurrentPage() {
     switch (_currentIndex) {
       case 0:
-        return const JumpExercisePage();
+        return const JumpPage(title: "saut");
       case 1:
         return const SleevingExercisePage();
       case 2:
         return const StatsScreen();
       default:
-        return const JumpExercisePage();
+        return const JumpPage(title: "saut");
     }
   }
 }
