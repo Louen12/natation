@@ -18,6 +18,7 @@ class MainApp extends StatelessWidget {
       routes: {
         '/': (context) => const ProgramPage(title: 'Programme'),
         '/yoga': (context) => const YogaPage(title: "Yoga"),
+        '/course': (context) => const RunningScreen(title: "Course")
       },
     );
   }
