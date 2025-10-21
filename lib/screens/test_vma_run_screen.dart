@@ -5,6 +5,9 @@ import 'package:natation/services/bay_vma_service.dart';
 import 'package:natation/widgets/bay_speed_indicator.dart';
 import 'package:audioplayers/audioplayers.dart';
 
+import '../models/exercise.dart';
+import '../repositories/exercice_repository.dart';
+
 class TestVmaRunScreen extends StatefulWidget {
   const TestVmaRunScreen({super.key});
 
@@ -15,6 +18,23 @@ class TestVmaRunScreen extends StatefulWidget {
 class _TestVmaScreenState extends State<TestVmaRunScreen> {
   final vmaService = BayVMAService();
   final gpsService = BayGPSService();
+
+  final _repo = ExerciseRepository();
+  Exercise? exercise;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Récupère l'exercice métier passé via Navigator (pour l'id)
+    if (exercise == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Exercise) {
+        exercise = args;
+      } else {
+        debugPrint('Aucun exercice transmis à YogaPage');
+      }
+    }
+  }
 
   double vitesseGPS = 0.0;
   int palier = 1;
@@ -101,9 +121,17 @@ class _TestVmaScreenState extends State<TestVmaRunScreen> {
     final palierAtteint = vmaService.getLevel(palier);
     final vma = palierAtteint.vitesse;
 
+    final ex = exercise;
+
+    if (ex != null) {
+      unawaited(_repo.setDone(ex.id, true));
+    } else {
+      debugPrint('Impossible de marquer comme fait: exercise == null');
+    }
+
     Navigator.pushNamed(
       context,
-      '/result',
+      '/result_vma',
       arguments: {
         'palier': palierAtteint.numero,
         'vma': vma,
