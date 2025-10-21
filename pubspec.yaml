@@ -24,4 +24,4 @@ flutter:
 
   assets:
     - assets/audios/beep.mp3
-    - maquette/checked.png
+    - assets/images/checked.png
