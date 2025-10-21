@@ -25,7 +25,6 @@ class RunningScreen extends StatefulWidget {
 
 class _RunningScreenState extends State<RunningScreen> {
   // Map & tracking
-
   final _repo = ExerciseRepository();
 
   final MapController _mapController = MapController();
@@ -72,8 +71,8 @@ class _RunningScreenState extends State<RunningScreen> {
   }
 
   void _initObjectives() {
-    _plannedDistanceMeters = widget.plannedDistanceMeters ?? 5000;
-    _maxDurationSeconds = widget.maxDurationSeconds ?? 45 * 60;
+    _plannedDistanceMeters = exercise?.distance ?? 5000;
+    _maxDurationSeconds = exercise?.duration ?? 45 * 60;
   }
 
   Future<void> _ensureLocationReady() async {
