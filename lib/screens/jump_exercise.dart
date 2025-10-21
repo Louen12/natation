@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:natation/services/jump_service.dart';
+import 'dart:async'; // pour unawaited
+import 'package:natation/repositories/exercice_repository.dart';
+import 'package:natation/models/exercise.dart';
+
 
 class JumpPage extends StatefulWidget {
   final String title;
@@ -11,6 +15,9 @@ class JumpPage extends StatefulWidget {
 
 class _JumpPageState extends State<JumpPage> {
   final jumpService = JumpService(massKg: 75);
+
+  final _repo = ExerciseRepository();
+  Exercise? exercise;
 
   @override
   void initState() {
@@ -24,6 +31,19 @@ class _JumpPageState extends State<JumpPage> {
   void dispose() {
     jumpService.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (exercise == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Exercise) {
+        exercise = args;
+      } else {
+        debugPrint('Aucun exercice transmis à JumpPage');
+      }
+    }
   }
 
   @override
@@ -121,6 +141,14 @@ class _JumpPageState extends State<JumpPage> {
                 onPressed: () {
                   if (jumpService.isRunning) {
                     jumpService.stop();
+
+                    final ex = exercise;
+                    if (ex != null) {
+                      unawaited(_repo.setDone(ex.id, true)); // ✅ marque exo comme fait
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Exercice terminé ✅')),
+                      );
+                    }
                   } else {
                     jumpService.start();
                   }
