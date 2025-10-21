@@ -13,9 +13,6 @@ dependencies:
   provider: ^6.1.5+1
   sensors_plus: ^7.0.0
   flutter_tts: ^4.0.2
-  sqflite: ^2.3.0
-  path: ^1.8.3
-  sensors_plus: ^5.0.0
   sqflite: ^2.3.3
   path: ^1.9.0
   path_provider: ^2.1.4
@@ -33,9 +30,10 @@ flutter:
     - assets/stop.svg
     - assets/gif.svg
     - assets/arret.svg
+    - assets/db.json
   fonts:
     - family: DynaPuff
       fonts:
         - asset: assets/fonts/DynaPuff-Regular.ttf
         - asset: assets/fonts/DynaPuff-Bold.ttf
-    - assets/db.json
+    
