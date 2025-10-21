@@ -127,19 +127,6 @@ class RunningControls extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (running)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Text(
-              "Objectif: ${(plannedDistanceMeters / 1000).toStringAsFixed(2)} km en ${(maxDurationSeconds / 60).toStringAsFixed(0)} min",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -155,33 +142,31 @@ class RunningControls extends StatelessWidget {
                 shape: const CircleBorder(),
               ),
             ),
-
             running
                 ? Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: Colors.orange,
-                shape: BoxShape.circle,
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  "assets/images/giphy.gif", // ton gif dans assets
-                  height: 60,
-                  width: 60,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            )
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        "assets/images/giphy.gif",
+                        height: 60,
+                        width: 60,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  )
                 : IconButton(
-              onPressed: onStart,
-              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.orange,
-                padding: const EdgeInsets.all(20),
-                shape: const CircleBorder(),
-              ),
-            ),
-
+                    onPressed: onStart,
+                    icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.all(20),
+                      shape: const CircleBorder(),
+                    ),
+                  ),
             IconButton(
               onPressed: running ? onStop : null,
               icon: const Icon(Icons.stop, color: Colors.white),
@@ -192,6 +177,18 @@ class RunningControls extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Text(
+            "Objectif: ${(plannedDistanceMeters / 1000).toStringAsFixed(2)} km en ${(maxDurationSeconds / 60).toStringAsFixed(0)} min",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ),
       ],
     );
