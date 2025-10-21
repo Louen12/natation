@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:natation/services/database_service.dart';
+
+import '../repositories/vma_repository.dart';
 
 class ResultVmaScreen extends StatelessWidget {
   const ResultVmaScreen({super.key});
@@ -107,7 +108,7 @@ class ResultVmaScreen extends StatelessWidget {
               const SizedBox(height: 40),
               ElevatedButton.icon(
                 onPressed: () async {
-                  await DatabaseService().insertResult(palier, vma);
+                  await VmaRepository().insertResult(palier, vma);
                   Navigator.popUntil(context, (route) => route.isFirst);
                 },
                 icon: const Icon(Icons.home, color: Colors.white),

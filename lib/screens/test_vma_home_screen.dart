@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/vico_header.dart';
+
 class TestVmaHomeScreen extends StatelessWidget {
   const TestVmaHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    double _distanceMeters = 0.0;
+    Duration _elapsed = Duration.zero;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Test VMA"),
@@ -33,12 +37,15 @@ class TestVmaHomeScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.directions_run_rounded,
-                color: Colors.orange.shade700,
-                size: 120,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 30.0),
+                child: VicoHeader(
+                  temps: _elapsed,
+                  distance: _distanceMeters / 1000,
+                  showTimes: false,
+                ),
               ),
-              const SizedBox(height: 20),
+              Expanded(child: const SizedBox(height: 10)),
               Text(
                 "Bienvenue dans le Test VMA 🏃",
                 textAlign: TextAlign.center,
@@ -87,6 +94,7 @@ class TestVmaHomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 300),
             ],
           ),
         ),

@@ -12,7 +12,6 @@ dependencies:
     sdk: flutter
   flutter_map: ^7.0.2
   geolocator: ^13.0.1
-  latlong2: ^0.9.1
   sensors_plus: ^5.0.0
   sqflite: ^2.3.3
   path: ^1.9.0

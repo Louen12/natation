@@ -24,23 +24,23 @@ class ExerciseWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${exercise.reps} x ${exercise.steps} ${exercise.name}',
+            exercise.reps != null && exercise.steps != null? '${exercise.reps} x ${exercise.steps} ${exercise.name}' : '${exercise.name}',
             style: DefaultTextStyle.of(context)
                 .style
                 .apply(fontSizeFactor: 1.3),
           ),
-          action ?
+          !action ?
           ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
-                  builder: (context) => TestVmaHomeScreen()
+                  builder: (context) => Exercise.getWidgetFromName(exercise)
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: action ? Colors.blue : Colors.green,
+              backgroundColor: action ? Colors.blue : Colors.lightGreen,
               foregroundColor: Colors.white,
               padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
@@ -57,7 +57,7 @@ class ExerciseWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Image.asset(
-              "maquette/checked.png",
+              "assets/images/checked.png",
               height: 20,
             ),
           ),

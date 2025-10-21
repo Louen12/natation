@@ -91,6 +91,22 @@ class VicoHeader extends StatelessWidget {
             // Espacement + bloc d'infos (affichés seulement si showTimes == true)
             showTimes
                 ? Column(
+              children: [
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _infoWidget(tempsStr, "Temps"),
+                    _infoWidget(tempsAuKm, "Temps au km"),
+                    _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
+                  ],
+                ),
+              ],
+            )
+                : const SizedBox.shrink(),
+            // Espacement + bloc d'infos (affichés seulement si showTimes == true)
+            showTimes
+                ? Column(
                     children: [
                       const SizedBox(height: 20),
                       Row(
@@ -149,7 +165,7 @@ class HeaderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = const Color.fromRGBO(255, 98, 0, 1);
-    
+
     final path = Path()
       ..moveTo(0, 20)
       ..quadraticBezierTo(0, 0, 20, 0) // arrondi haut gauche
