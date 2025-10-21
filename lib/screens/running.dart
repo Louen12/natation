@@ -222,6 +222,7 @@ class _RunningScreenState extends State<RunningScreen> {
               child: VicoHeader(
                 temps: _elapsed,
                 distance: _distanceMeters / 1000,
+                showTimes: true,
               ),
             ),
             

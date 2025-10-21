@@ -43,6 +43,7 @@ class TrainingListScreen extends StatelessWidget {
                     const VicoHeader(
                       temps: Duration.zero,
                       distance: 0.0,
+                      showTimes: false,
                     ),
                     const SizedBox(height: 28),
                     Text(
