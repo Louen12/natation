@@ -8,6 +8,7 @@ import '../services/traction_sensor_service.dart';
 import '../widgets/tjtq_circle_button.dart';
 import '../widgets/tjtq_card.dart';
 import '../widgets/tjtq_congrats_popup.dart';
+import '../db/app_database.dart';
 
 /// Machine à états:
 /// idle -> descent -> bottom -> ascent -> rep validée
@@ -227,6 +228,10 @@ class _TractionPageState extends State<TractionPage> {
 
   /// Arrête la séance et remet l'état à zéro.
   void _stopTraction() {
+    // Sauvegarde la session si pertinente avant de réinitialiser
+    if (isTractionRunning) {
+      _saveSession(completed: false);
+    }
     _sub?.cancel();
     _restTimer?.cancel();
     setState(() {
@@ -424,6 +429,8 @@ class _TractionPageState extends State<TractionPage> {
   void _onSetFinished() {
     _sub?.cancel();
     if (currentSet >= plan.sets) {
+      // Sauvegarde séance complétée
+      _saveSession(completed: true);
       _speak("Séance terminée. Bravo !");
       showModalBottomSheet(
         context: context,
@@ -442,6 +449,44 @@ class _TractionPageState extends State<TractionPage> {
     } else {
       _speak("Série $currentSet terminée. Repos de ${plan.restSeconds} secondes.");
       _startRest();
+    }
+  }
+
+  /// Sauvegarde une séance en base de données.
+  /// completed = true si toutes les séries sont terminées.
+  Future<void> _saveSession({required bool completed}) async {
+    try {
+      // Calcule sets complétés et total de répétitions
+      int completedSets;
+      int totalReps;
+      if (completed) {
+        completedSets = plan.sets;
+        totalReps = plan.sets * plan.repsPerSet;
+      } else {
+        // Série courante éventuellement incomplète
+        final bool currentFinished = inRest || (currentReps >= plan.repsPerSet);
+        completedSets = (currentSet - 1) + (currentFinished ? 1 : 0);
+        final int partialReps = currentFinished ? 0 : currentReps;
+        completedSets = completedSets.clamp(0, plan.sets);
+        totalReps = (completedSets * plan.repsPerSet) + partialReps;
+      }
+
+      if (totalReps <= 0) return; // évite d'enregistrer une séance vide
+
+      final session = ExerciseSession(
+        exerciseType: 'traction',
+        setsPlanned: plan.sets,
+        repsPerSetPlanned: plan.repsPerSet,
+        restSecondsPlanned: plan.restSeconds,
+        setsCompleted: completed ? plan.sets : completedSets,
+        totalReps: totalReps,
+        startedAt: _tractionStarted,
+        endedAt: DateTime.now(),
+        notes: null,
+      );
+      await SessionDao.insert(session);
+    } catch (_) {
+      // On ignore les erreurs silencieusement pour ne pas casser l'UX
     }
   }
 
