@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:natation/services/database_service.dart';
+import 'package:natation/repositories/vma_repository.dart';
 
 class HistoryVmaScreen extends StatefulWidget {
   const HistoryVmaScreen({super.key});
@@ -18,12 +18,12 @@ class _HistoryScreenState extends State<HistoryVmaScreen> {
   }
 
   Future<void> _loadResults() async {
-    final data = await DatabaseService().getResults();
+    final data = await VmaRepository().getResults();
     setState(() => results = data);
   }
   
   Future<void> _deleteResult(int id) async {
-    await DatabaseService().deleteOneResult(id);
+    await VmaRepository().deleteOneResult(id);
     _loadResults();
   }
 
