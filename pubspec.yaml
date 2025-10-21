@@ -26,12 +26,12 @@ flutter:
   uses-material-design: true
 
   assets:
-    - maquette/guepard.png
-    - maquette/mesange.png
-    - maquette/giphy.gif
+    - assets/images/guepard.png
+    - assets/images/mesange.png
+    - assets/images/giphy.gif
     - entrainement.json
-    - maquette/success.gif
-    - maquette/clash-royale-boohoo.gif
+    - assets/images/success.gif
+    - assets/images/clash-royale-boohoo.gif
 
   fonts:
     - family: DynaPuff

@@ -50,8 +50,8 @@ class RunningControls extends StatelessWidget {
 
   Widget _buildResultView() {
     final gifPath = success 
-        ? "maquette/success.gif"  // GIF de succès
-        : "maquette/clash-royale-boohoo.gif";      // GIF d'échec
+        ? "assets/images/success.gif"  // GIF de succès
+        : "assets/images/clash-royale-boohoo.gif";      // GIF d'échec
     
     final message = success ? "GOOD JOB!" : "MAYBE NEXT TIME!";
     
@@ -126,7 +126,7 @@ class RunningControls extends StatelessWidget {
             ),
             child: ClipOval(
               child: Image.asset(
-                "maquette/giphy.gif", // ton gif dans assets
+                "assets/images/giphy.gif", // ton gif dans assets
                 height: 60,
                 width: 60,
                 fit: BoxFit.cover,
