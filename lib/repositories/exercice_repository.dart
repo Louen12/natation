@@ -1,3 +1,4 @@
+import 'package:natation/models/exercice_perfomance.dart';
 import 'package:sqflite/sqflite.dart';
 import '../db/app_database.dart';
 import '../models/exercise.dart';
@@ -85,5 +86,10 @@ class ExerciseRepository {
   Future<void> resetAllDone() async {
     final db = await _db;
     await db.update('exercises', {'is_done': 0});
+  }
+
+  Future<void> savePerformance(ExercisePerformance perf) async {
+    final db = await _db;
+    await db.insert('exercise_performances', perf.toMap());
   }
 }
