@@ -79,34 +79,39 @@ class _RunningScreenState extends State<RunningScreen> {
   }
 
   Future<void> _initObjectives() async {
-    // Valeurs par défaut si rien en base
-    double plannedMeters = widget.plannedDistanceMeters ?? 5000;
-    int maxSecs = widget.maxDurationSeconds ?? 45 * 60;
+    double? plannedMeters;
+    int? maxSecs;
 
-    // Tente de récupérer l'exercice depuis la base (comme les autres pages)
     try {
       final ex = exercise;
       if (ex != null) {
         final fromDb = await _repo.getById(ex.id);
+
+        // Si la BDD renvoie quelque chose, on l'utilise
         final effective = fromDb ?? ex;
-        // distance est stockée en mètres dans l'app (selon usages de RunningControls)
+        print(effective.distance);
+        // On vérifie et assigne correctement les champs
         if (effective.distance != null) {
-          plannedMeters = effective.distance!;
+          plannedMeters = effective.distance;
         }
-        if (effective.duration != null) {
-          maxSecs = effective.duration!;
+        if (effective.timeObjective != null) {
+          maxSecs = effective.timeObjective;
         }
+
+        debugPrint('Objectifs chargés : $plannedMeters m, $maxSecs s');
       }
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Erreur chargement objectifs depuis la BDD: $e');
+      debugPrint('$stack');
     }
 
-    if (!mounted) return;
+    // On ne met à jour le state que si on a des valeurs valides
     setState(() {
-      _plannedDistanceMeters = plannedMeters;
-      _maxDurationSeconds = maxSecs;
+      _plannedDistanceMeters = plannedMeters ?? 0;
+      _maxDurationSeconds = maxSecs ?? 0;
     });
   }
+
 
   Future<void> _ensureLocationReady() async {
     try {

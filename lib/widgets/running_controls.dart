@@ -22,9 +22,7 @@ class RunningControls extends StatelessWidget {
     required this.onStop,
     required this.maxDurationSeconds,
     required this.plannedDistanceMeters,
-
   });
-
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
@@ -181,7 +179,7 @@ class RunningControls extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 16),
           child: Text(
-            "Objectif: ${(plannedDistanceMeters / 1000).toStringAsFixed(2)} km en ${(maxDurationSeconds / 60).toStringAsFixed(0)} min",
+            "Objectif: ${plannedDistanceMeters.toStringAsFixed(2)} km en ${(maxDurationSeconds / 60).toStringAsFixed(0)} min",
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
