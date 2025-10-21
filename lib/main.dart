@@ -1,70 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:natation/screens/jump_exercise.dart';
-import 'screens/sleeving_exercise.dart';
-import 'widgets/ExerciseCard.dart';
-import 'widgets/draggable_nav_bar.dart';
+import 'package:natation/screens/sleeving_exercise.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MainApp());
 }
 
-class MyApp extends StatelessWidget {
+class MainApp extends StatelessWidget {
+  const MainApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Draggable NavBar',
-      home: HomeScreen(),
+      title: 'Natation App',
+      home: const MainNavigationScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
+
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  bool isPlaying = false;
-  bool isJumpPage = false;
-  String exerciseTitle = "Titre de l'exercice";
-  final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 219, 219, 219),
-      body: Stack(
-        children: [
-          Center(
-            child: isJumpPage
-                ? JumpExercisePage(cardKey: _cardKey, isPlaying: isPlaying)
-                : SleevingExercisePage(
-                    cardKey: _cardKey,
-                    showInstructions:
-                        !isPlaying,
-                  ),
-          ),
-
-          DraggableNavBar(
-            isPlaying: isPlaying,
-            exerciseTitle: exerciseTitle,
-            onPlayPause: () {
-              _cardKey.currentState?.toggleTimer();
-              setState(() => isPlaying = !isPlaying);
-            },
-            onStop: () => setState(() => isPlaying = false),
-
-            onNext: () {
-              setState(() {
-                isJumpPage = !isJumpPage;
-                exerciseTitle =
-                    isJumpPage ? "Jump Exercise" : "Gainage Latéral";
-              });
-            },
-          ),
-        ],
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Color(0xFFFF6200),
+              ),
+              child: Text(
+                'Natation App',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.fitness_center),
+              title: const Text('Exercice de Saut'),
+              selected: _currentIndex == 0,
+              onTap: () {
+                setState(() {
+                  _currentIndex = 0;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.accessibility_new),
+              title: const Text('Gainage Latéral'),
+              selected: _currentIndex == 1,
+              onTap: () {
+                setState(() {
+                  _currentIndex = 1;
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
+      appBar: AppBar(
+        title: Text(_currentIndex == 0 ? 'Exercice de Saut' : 'Gainage Latéral'),
+        backgroundColor: const Color(0xFFFF6200),
+        foregroundColor: Colors.white,
+      ),
+      body: _currentIndex == 0 
+          ? const JumpExercisePage()
+          : const SleevingExercisePage(),
     );
   }
 }

@@ -52,6 +52,14 @@ class ExerciseCardState extends State<ExerciseCard> {
     }
   }
 
+  void resetTimer() {
+    _timer?.cancel();
+    setState(() {
+      _elapsedSeconds = 0;
+      _isRunning = false;
+    });
+  }
+
   bool get isRunning => _isRunning;
 
   String get formattedTime {
