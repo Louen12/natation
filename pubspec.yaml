@@ -26,6 +26,8 @@ flutter:
     - maquette/mesange.png
     - maquette/giphy.gif
     - entrainement.json
+    - maquette/success.gif
+    - maquette/clash-royale-boohoo.gif
 
   fonts:
     - family: DynaPuff

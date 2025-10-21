@@ -32,6 +32,8 @@ class _RunningScreenState extends State<RunningScreen> {
   Duration _elapsed = Duration.zero;
   bool _running = false;
   bool _paused = false;
+  bool _finished = false;
+  bool _success = false;
 
   // Metrics
   double _distanceMeters = 0.0;
@@ -111,6 +113,17 @@ class _RunningScreenState extends State<RunningScreen> {
   void _start() {
     if (_running) return;
     setState(() {
+      // Réinitialiser si c'était fini
+      if (_finished) {
+        _elapsed = Duration.zero;
+        _distanceMeters = 0.0;
+        _track.clear();
+        if (_currentLatLng != null) {
+          _track.add(_currentLatLng!);
+        }
+        _finished = false;
+        _success = false;
+      }
       _running = true;
       _paused = false;
     });
@@ -170,33 +183,12 @@ class _RunningScreenState extends State<RunningScreen> {
     final success = achievedDistance && withinTime;
 
     if (!mounted) return;
-    if (showDialogOnStop) {
-      showDialog(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            title: Text(success ? 'Objectif atteint 🎉' : 'Objectif non atteint'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Distance prévue: ${(_plannedDistanceMeters / 1000).toStringAsFixed(2)} km'),
-                Text('Distance parcourue: ${( _distanceMeters / 1000).toStringAsFixed(2)} km'),
-                const SizedBox(height: 8),
-                Text('Temps max: ${GeoUtils.formatDuration(Duration(seconds: _maxDurationSeconds))}'),
-                Text('Temps réalisé: ${GeoUtils.formatDuration(_elapsed)}'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+    
+    // Au lieu d'afficher un dialog, on met à jour l'état
+    setState(() {
+      _finished = true;
+      _success = success;
+    });
   }
 
   @override
@@ -217,42 +209,45 @@ class _RunningScreenState extends State<RunningScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                _buildMap(),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: VicoHeader(
-                    temps: _elapsed,
-                    distance: _distanceMeters / 1000,
-                  ),
-                ),
-                // Flèche de retour en bas à gauche sur la map
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, size: 32, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      padding: const EdgeInsets.all(8),
-                    ),
-                  ),
-                ),
-              ],
+        child: Stack(
+          children: [
+            // Map en plein écran
+            _buildMap(),
+            
+            // Header en haut
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: VicoHeader(
+                temps: _elapsed,
+                distance: _distanceMeters / 1000,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _buildControls(),
-          const SizedBox(height: 12),
-        ],
-      ),
+            
+            // Contrôles en bas
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildControls(),
+            ),
+            
+            // Flèche de retour en bas à gauche (au-dessus du bloc noir)
+            Positioned(
+              bottom: 120,
+              left: 16,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, size: 32, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.5),
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -269,6 +264,8 @@ class _RunningScreenState extends State<RunningScreen> {
     return RunningControls(
       running: _running,
       paused: _paused,
+      finished: _finished,
+      success: _success,
       onStart: _start,
       onPauseResume: _pauseResume,
       onStop: () => _stop(showDialogOnStop: true),
