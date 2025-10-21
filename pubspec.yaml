@@ -7,12 +7,14 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
+  audioplayers: ^6.5.1
   flutter:
     sdk: flutter
   sensors_plus: ^5.0.0
   sqflite: ^2.3.3
   path: ^1.9.0
   path_provider: ^2.1.4
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +25,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/db.json
+    - assets/audios/beep.mp3
+    - assets/images/checked.png
