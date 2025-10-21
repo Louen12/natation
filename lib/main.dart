@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:natation/screens/synthese_4couleurs.dart';
+import 'package:natation/screens/program.dart';
+import 'package:natation/screens/yoga.dart';
 
 void main() {
   runApp(const MainApp());
@@ -11,9 +12,11 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '4 Couleurs - Natation',
-      home: const Synthese4Couleurs(),
-      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const ProgramPage(title: 'Programme'),
+        '/yoga': (context) => const YogaPage(title: "Yoga"),
+      },
     );
   }
 }
