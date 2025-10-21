@@ -61,6 +61,7 @@ class _ProgramExercisesState extends State<ProgramExercises> {
                       child: VicoHeader(
                         temps: _elapsed,
                         distance: _distanceMeters / 1000,
+                        showTimes: false,
                       ),
                     ),
                     Expanded(child:

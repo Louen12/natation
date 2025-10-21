@@ -57,7 +57,7 @@ class AppDatabase {
         height_objective INTEGER,
         time INTEGER,
         type TEXT,
-        is_done INTEGER NOT NULL DEFAULT 0,
+        is_done INTEGER NOT NULL,
         is_failed INTEGER NOT NULL DEFAULT 0
       );
     ''');

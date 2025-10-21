@@ -9,14 +9,16 @@
       "name": "Pompes",
       "reps": 10,
       "steps": 3,
-      "rest": "60"
+      "rest": "60",
+      "isDone": true
     },
     {
       "id": 7,
       "name": "Traction",
       "reps": 15,
       "steps": 3,
-      "rest": "60"
+      "rest": "60",
+      "isDone": true
     },
     {
       "id": 2,
@@ -43,7 +45,8 @@
       "id": 3,
       "name": "Course",
       "distance": "5",
-      "time_objective": "1200"
+      "time_objective": "1200",
+      "isDone": true
     },
     {
       "id": 4,
@@ -51,7 +54,8 @@
       "duration": "30",
       "jump_number": 20,
       "height_objective": 40,
-      "rest": "30"
+      "rest": "30",
+      "isDone": true
     },
     {
       "id": 5,
@@ -59,7 +63,8 @@
       "reps": 10,
       "time": "30",
       "rest": "30",
-      "type": "planche"
+      "type": "planche",
+      "isDone": true
     },
     {
       "id": 6,

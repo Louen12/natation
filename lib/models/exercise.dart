@@ -80,7 +80,7 @@ class Exercise {
       heightObjective: _toInt(json['height_objective']),
       time: _toInt(json['time']),
       type: json['type']?.toString(),
-      isDone: false,
+      isDone: _toBoolDone(json['isDone']),
       isFailed: false
     );
   }
