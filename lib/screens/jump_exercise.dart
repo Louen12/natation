@@ -1,10 +1,13 @@
 import 'dart:math';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:natation/services/jump_service.dart';
 import 'package:provider/provider.dart';
 import '../widgets/ExerciseCard.dart';
 import '../widgets/draggable_nav_bar.dart';
 import '../services/tts_service.dart';
+import '../repositories/jump_repository.dart';
+import '../models/jump_session.dart';
 
 class JumpExercisePage extends StatefulWidget {
   const JumpExercisePage({super.key});
@@ -16,6 +19,7 @@ class JumpExercisePage extends StatefulWidget {
 class _JumpExercisePageState extends State<JumpExercisePage> {
   final TTSService _ttsService = TTSService();
   final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
+  final JumpRepository _repository = JumpRepository();
   
   final String _exerciseText =
       "Pour cette séance, nous allons faire des SAUTS VERTICAUX. "
@@ -31,6 +35,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   double _totalPower = 0;
   DateTime? _sessionStartTime;
   Duration _totalSessionTime = Duration.zero;
+  StreamSubscription<JumpEvent>? _jumpSubscription;
 
   @override
   void initState() {
@@ -48,6 +53,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   @override
   void dispose() {
     _ttsService.dispose();
+    _jumpSubscription?.cancel();
     super.dispose();
   }
 
@@ -70,11 +76,18 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
       // Message de début
       _ttsService.speak("C'est parti ! Commencez vos sauts verticaux !");
     }
+    
+    // Écouter les événements de saut
+    _jumpSubscription?.cancel();
+    _jumpSubscription = Provider.of<JumpService>(context, listen: false).events.listen((jumpEvent) {
+      _onJumpDetected(jumpEvent);
+    });
   }
 
   void _stopExercise() {
     // Arrêter tout
     _ttsService.stop();
+    _jumpSubscription?.cancel();
     
     // Arrêter le timer de l'ExerciseCard
     _cardKey.currentState?.stopTimer();
@@ -84,12 +97,38 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
       _totalSessionTime = DateTime.now().difference(_sessionStartTime!);
     }
     
+    // Sauvegarder la session
+    _saveSession();
+    
     // Mettre à jour l'état
     setState(() {
       _isPlaying = false;
     });
     
     _showResults();
+  }
+
+  void _saveSession() async {
+    if (_sessionStartTime != null && _jumpCount > 0) {
+      final session = JumpSession(
+        startTime: _sessionStartTime!,
+        endTime: DateTime.now(),
+        duration: _totalSessionTime,
+        repetitions: _jumpCount,
+        totalHeight: _totalHeight,
+        maxHeight: _maxHeight,
+        totalCalories: _totalCalories,
+        averagePower: _totalPower / _jumpCount,
+        notes: 'Session de sauts verticaux',
+      );
+      
+      try {
+        await _repository.insertSession(session);
+        print('Session de sauts sauvegardée: ${session.toMap()}');
+      } catch (e) {
+        print('Erreur lors de la sauvegarde: $e');
+      }
+    }
   }
 
   void _showResults() {
@@ -174,7 +213,12 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
     });
   }
 
-  void _onJumpDetected(double height, double calories, double power) {
+  void _onJumpDetected(JumpEvent jumpEvent) {
+    final double airtimeSeconds = jumpEvent.airTime.inMilliseconds / 1000.0;
+    final double height = (9.81 * pow(airtimeSeconds / 2, 2)) * 100;
+    final double calories = height * 0.02;
+    final double power = jumpEvent.peakTakeoffG;
+
     setState(() {
       _jumpCount++;
       _totalHeight += height;
@@ -207,7 +251,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
         child: _JumpView(
           cardKey: _cardKey,
           isPlaying: _isPlaying,
-          onJumpDetected: _onJumpDetected,
+          jumpCount: _jumpCount,
           onPlayPause: _togglePlayPause,
           onStop: _stopExercise,
           onSpeak: () async {
@@ -237,7 +281,7 @@ class ProviderScope extends StatelessWidget {
 class _JumpView extends StatelessWidget {
   final GlobalKey<ExerciseCardState> cardKey;
   final bool isPlaying;
-  final Function(double height, double calories, double power)? onJumpDetected;
+  final int jumpCount;
   final VoidCallback? onPlayPause;
   final VoidCallback? onStop;
   final VoidCallback? onSpeak;
@@ -248,7 +292,7 @@ class _JumpView extends StatelessWidget {
   const _JumpView({
     required this.cardKey,
     required this.isPlaying,
-    this.onJumpDetected,
+    required this.jumpCount,
     this.onPlayPause,
     this.onStop,
     this.onSpeak,
@@ -261,7 +305,7 @@ class _JumpView extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = context.watch<JumpService>();
 
-    return Scaffold(
+    return Scaffold( 
       backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
@@ -277,7 +321,7 @@ class _JumpView extends StatelessWidget {
                   key: cardKey,
                   title: "NATH A FOND",
                   bestTime: bestTime,
-                  repetitions: service.jumpCount.value,
+                  repetitions: jumpCount,
                   leftImage: "assets/images/fast-cheetah.png",
                   rightImage: "assets/images/bird.png",
                 ),
@@ -389,9 +433,6 @@ class _JumpView extends StatelessWidget {
             height = (9.81 * pow(airtimeSeconds / 2, 2)) * 100;
             calories = height * 0.02;
             power = evt.peakTakeoffG;
-
-            // Notifier le saut détecté
-            onJumpDetected?.call(height, calories, power);
           }
 
           return Row(
@@ -412,7 +453,7 @@ class _JumpView extends StatelessWidget {
                     ),
                     _buildStatLine(
                       "Nombre de sauts :",
-                      "${service.jumpCount.value}",
+                      "$jumpCount",
                     ),
                     _buildStatLine(
                       "Puissance estimée :",

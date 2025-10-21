@@ -5,6 +5,8 @@ import '../widgets/draggable_nav_bar.dart';
 import '../services/tts_service.dart';
 import '../services/timer_service.dart';
 import '../services/audio_service.dart';
+import '../repositories/sleeving_repository.dart';
+import '../models/sleeving_session.dart';
 
 class SleevingExercisePage extends StatefulWidget {
   const SleevingExercisePage({super.key});
@@ -17,6 +19,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   final TTSService _ttsService = TTSService();
   final AudioService _audioService = AudioService();
   final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
+  final SleevingRepository _repository = SleevingRepository();
 
   final String _exerciseText =
       "Pour cette séance, nous allons faire un GAINAGE LATÉRAL 8 fois. "
@@ -112,6 +115,9 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       _totalSessionTime = DateTime.now().difference(_sessionStartTime!);
     }
     
+    // Sauvegarder la session
+    _saveSession();
+    
     // Mettre à jour l'état
     setState(() {
       _isPlaying = false;
@@ -121,6 +127,31 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
     });
     
     _showResults();
+  }
+
+  void _saveSession() async {
+    if (_sessionStartTime != null && _repetitions > 0) {
+      final averageHoldTime = Duration(
+        milliseconds: _totalSessionTime.inMilliseconds ~/ _repetitions,
+      );
+      
+      final session = SleevingSession(
+        startTime: _sessionStartTime!,
+        endTime: DateTime.now(),
+        duration: _totalSessionTime,
+        repetitions: _repetitions,
+        targetRepetitions: _targetRepetitions,
+        averageHoldTime: averageHoldTime,
+        notes: 'Session de gainage latéral',
+      );
+      
+      try {
+        await _repository.insertSession(session);
+        print('Session de gainage sauvegardée: ${session.toMap()}');
+      } catch (e) {
+        print('Erreur lors de la sauvegarde: $e');
+      }
+    }
   }
 
   void _nextRepetition() {
