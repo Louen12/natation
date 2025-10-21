@@ -74,6 +74,17 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX idx_positions_exercise_id ON positions(exercise_id);',
     );
+
+    await db.execute('''CREATE TABLE exercise_performances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      exercise_id INTEGER,
+      date TEXT,
+      repetitions INTEGER,
+      duration INTEGER,
+      average_hold_time INTEGER,
+      FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+    );
+    ''');
   }
 
   /// ajoute la colonne is_done si absente

@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:natation/models/exercice_perfomance.dart';
+import 'package:natation/models/exercise.dart';
+import 'package:natation/repositories/exercice_repository.dart';
 import '../widgets/ExerciseCard.dart';
 import '../widgets/draggable_nav_bar.dart';
 import '../services/tts_service.dart';
@@ -36,16 +39,19 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   // Chronomètre pour le gainage
   late TimerService _timerService;
   int _repetitions = 0;
-  final int _targetRepetitions = 8;
+  int get _targetRepetitions => exercise?.reps ?? 8;
   DateTime? _sessionStartTime;
   Duration _totalSessionTime = Duration.zero;
+
+  final _repo = ExerciseRepository();
+  Exercise? exercise;
 
   @override
   void initState() {
     super.initState();
     _ttsService.initialize();
     _ttsService.setOnStateChanged(_updateSpeakingState);
-    
+
     // Initialiser le chronomètre (10 secondes par répétition)
     _timerService = TimerService(targetDuration: const Duration(seconds: 10));
     _timerService.setOnStartBeep(() => _audioService.playStartBeep());
@@ -68,7 +74,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       _showInstructions = !_isPlaying;
       _isStopped = false; // Réinitialiser l'état d'arrêt
     });
-    
+
     if (_isPlaying) {
       _startExercise();
       _cardKey.currentState?.startTimer();
@@ -87,7 +93,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       // Message de début
       _ttsService.speak("C'est parti ! Commencez votre gainage latéral !");
     }
-    
+
     if (_repetitions < _targetRepetitions) {
       if (_timerService.isPaused) {
         _timerService.resume(); // Reprendre au lieu de redémarrer
@@ -98,58 +104,54 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
     }
   }
 
-
   void _stopExercise() {
-    // Arrêter tout
     _timerService.stop();
     _ttsService.stop();
-    
-    // Annuler tous les timers
     _leoTimer?.cancel();
-    
-    // Arrêter le timer de l'ExerciseCard
     _cardKey.currentState?.stopTimer();
-    
-    // Calculer le temps total au moment de l'arrêt
+
     if (_sessionStartTime != null) {
       _totalSessionTime = DateTime.now().difference(_sessionStartTime!);
     }
-    
-    // Sauvegarder la session
+
     _saveSession();
-    
-    // Mettre à jour l'état
+
+    final ex = exercise;
+    if (ex != null) {
+      unawaited(_repo.setDone(ex.id, true));
+    }
+
     setState(() {
       _isPlaying = false;
       _showInstructions = true;
-      _showLeo = false; // Cacher Gros Léo
-      _isStopped = true; // Marquer comme arrêté
+      _showLeo = false;
+      _isStopped = true;
     });
-    
+
+    Navigator.of(context).pop(true);
+
     _showResults();
   }
 
   void _saveSession() async {
-    if (_sessionStartTime != null && _repetitions > 0) {
+    if (_sessionStartTime != null && _repetitions > 0 && exercise != null) {
       final averageHoldTime = Duration(
         milliseconds: _totalSessionTime.inMilliseconds ~/ _repetitions,
       );
-      
-      final session = SleevingSession(
-        startTime: _sessionStartTime!,
-        endTime: DateTime.now(),
-        duration: _totalSessionTime,
+
+      final performance = ExercisePerformance(
+        exerciseId: exercise!.id,
+        date: DateTime.now(),
         repetitions: _repetitions,
-        targetRepetitions: _targetRepetitions,
+        duration: _totalSessionTime,
         averageHoldTime: averageHoldTime,
-        notes: 'Session de gainage latéral',
       );
-      
+
       try {
-        await _repository.insertSession(session);
-        print('Session de gainage sauvegardée: ${session.toMap()}');
+        await _repo.savePerformance(performance);
+        debugPrint('Performance enregistrée *********************************************');
       } catch (e) {
-        print('Erreur lors de la sauvegarde: $e');
+        debugPrint('Erreur lors de la sauvegarde des performances ************************');
       }
     }
   }
@@ -159,10 +161,10 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       setState(() {
         _repetitions++;
       });
-      
+
       // Text-to-speech selon le nombre de répétitions
       _speakMotivation();
-      
+
       // Démarrer le timer pour Gros Léo après 4 répétitions
       if (_repetitions >= 2) {
         Timer(const Duration(seconds: 10), () {
@@ -175,7 +177,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
           }
         });
       }
-      
+
       if (_repetitions < _targetRepetitions) {
         _timerService.restart();
       } else {
@@ -188,10 +190,21 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
           _isPlaying = false;
           _showInstructions = true;
         });
-        _ttsService.speak("Bravo ! Tu as terminé l'exercice ! Gros Léo est très fier de toi !");
+        _ttsService.speak(
+          "Bravo ! Tu as terminé l'exercice ! Gros Léo est très fier de toi !",
+        );
+
+        final ex = exercise;
+        if (ex != null) {
+          unawaited(_repo.setDone(ex.id, true));
+        }
+
+        _saveSession();
+
         // Attendre que le TTS finisse avant d'afficher la modale
-        Future.delayed(const Duration(seconds: 3), () {
+        Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
+            Navigator.of(context).pop(true);
             _showResults();
           }
         });
@@ -201,9 +214,13 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
 
   void _speakMotivation() {
     if (_repetitions <= 2) {
-      _ttsService.speak("C'est mou ! Allez, plus fort tu veux maigrir ou pas ? Tu veux rester comme Choji à vie ?!");
+      _ttsService.speak(
+        "C'est mou ! Allez, plus fort tu veux maigrir ou pas ? Tu veux rester comme Choji à vie ?!",
+      );
     } else if (_repetitions <= 4) {
-      _ttsService.speak("Ça va mieux ! Continue tu veux maigrir ou pas ? Tu veux rester comme Choji à vie ?!");
+      _ttsService.speak(
+        "Ça va mieux ! Continue tu veux maigrir ou pas ? Tu veux rester comme Choji à vie ?!",
+      );
     } else if (_repetitions <= 6) {
       _ttsService.speak("Excellent ! Tu es sur la bonne voie !");
     } else {
@@ -214,8 +231,9 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   void _showResults() {
     final totalMinutes = _totalSessionTime.inMinutes;
     final totalSeconds = _totalSessionTime.inSeconds % 60;
-    final formattedTotalTime = '${totalMinutes.toString().padLeft(2, '0')}:${totalSeconds.toString().padLeft(2, '0')}';
-    
+    final formattedTotalTime =
+        '${totalMinutes.toString().padLeft(2, '0')}:${totalSeconds.toString().padLeft(2, '0')}';
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -224,19 +242,25 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildResultRow('Répétitions', '$_repetitions/$_targetRepetitions'),
+              _buildResultRow(
+                'Répétitions',
+                '$_repetitions/$_targetRepetitions',
+              ),
               _buildResultRow('Temps total', formattedTotalTime),
-              _buildResultRow('Répétitions complétées', _repetitions >= _targetRepetitions ? 'Oui' : 'Non'),
+              _buildResultRow(
+                'Répétitions complétées',
+                _repetitions >= _targetRepetitions ? 'Oui' : 'Non',
+              ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Fermer'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true);
                 _reloadExercise();
               },
               child: const Text('Reload Exercise'),
@@ -254,10 +278,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -275,13 +296,13 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   void _reloadExercise() {
     _timerService.stop();
     _ttsService.stop(); // Arrêter le TTS
-    
+
     // Réinitialiser le timer AVANT setState
     _timerService.reset();
-    
+
     // Réinitialiser le timer de l'ExerciseCard
     _cardKey.currentState?.resetTimer();
-    
+
     setState(() {
       _repetitions = 0;
       _isPlaying = false;
@@ -292,7 +313,6 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       _totalSessionTime = Duration.zero;
     });
   }
-
 
   @override
   void dispose() {
@@ -306,6 +326,19 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   void didUpdateWidget(covariant SleevingExercisePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Plus besoin de cette méthode car on gère les états localement
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (exercise == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Exercise) {
+        setState(() => exercise = args);
+      } else {
+        debugPrint('Aucun exercice transmis à SleevingExercisePage');
+      }
+    }
   }
 
   @override
@@ -323,13 +356,14 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 ExerciseCard(
-                  title: "NATH A FOND",
                   key: _cardKey,
-                  bestTime: _getBestTime(),
+                  title: exercise?.name ?? "Exercice",
                   repetitions: _repetitions,
+                  bestTime: _getBestTime(),
                   leftImage: "assets/images/fast-cheetah.png",
                   rightImage: "assets/images/bird.png",
                 ),
+
                 const SizedBox(height: 20),
 
                 AnimatedSwitcher(
@@ -343,7 +377,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
               ],
             ),
           ),
-          
+
           // DraggableNavBar
           DraggableNavBar(
             isPlaying: _isPlaying,
@@ -383,10 +417,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
             "Commencez en position de planche latérale avec les pieds superposés. "
             "Soulevez les hanches tout en gardant le corps droit. Tenez la position.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w300,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w300),
           ),
           const SizedBox(height: 16),
           Row(
@@ -453,8 +484,6 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
                     fit: BoxFit.contain,
                   ),
                 ),
-                
-                
               ],
             )
           : Stack(
@@ -465,7 +494,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                       const Text(
+                      const Text(
                         "C'EST MOU ALLEZ !",
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -475,7 +504,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
                           fontFamily: 'DynaPuff',
                         ),
                       ),
-                      
+
                       Container(
                         height: 250,
                         child: Image.asset(
@@ -483,13 +512,10 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
                           fit: BoxFit.contain,
                         ),
                       ),
-                      
-                     
-                      
                     ],
                   ),
                 ),
-                
+
                 // Chronomètre en overlay - seulement si pas arrêté
                 if (!_isStopped)
                   Positioned(
