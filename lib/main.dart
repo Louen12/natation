@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:natation/screens/history_vma_screen.dart';
 import 'package:natation/screens/program.dart';
+import 'package:natation/screens/program_exercises.dart';
 import 'package:natation/screens/result_vma_screen.dart';
 import 'package:natation/screens/test_vma_home_screen.dart';
 import 'package:natation/screens/test_vma_run_screen.dart';
@@ -18,7 +19,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       initialRoute: '/',
       routes: {
-        '/': (context) => const ProgramPage(title: 'Programme'),
+        '/': (context) => const ProgramExercises(),
         '/yoga': (context) => const YogaPage(title: "Yoga"),
         '/vma': (context) => const TestVmaHomeScreen(),
         '/vma_test': (context) => const TestVmaRunScreen(),

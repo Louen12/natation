@@ -48,7 +48,7 @@ class VicoHeader extends StatelessWidget {
           left: 10,
           top: 15,
           child: Image.asset(
-            "maquette/guepard.png",
+            "assets/images/guepard.png",
             height: 110, // plus grand
           ),
         ),
@@ -58,7 +58,7 @@ class VicoHeader extends StatelessWidget {
           right: 0,
           top: 15,
           child: Image.asset(
-            "maquette/mesange.png",
+            "assets/images/mesange.png",
             height: 110, // plus grand
           ),
         ),

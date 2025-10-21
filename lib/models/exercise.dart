@@ -1,3 +1,5 @@
+import 'package:natation/screens/yoga.dart';
+
 import '../screens/test_vma_home_screen.dart';
 
 class Exercise {
@@ -126,7 +128,7 @@ class Exercise {
       case "Traction":
         return null;
       case "Yoga":
-        return null;
+        return YogaPage(title: "Yoga");
       case "Course":
         return null;
       case "Saut":

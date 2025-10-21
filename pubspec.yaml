@@ -27,3 +27,5 @@ flutter:
     - assets/db.json
     - assets/audios/beep.mp3
     - assets/images/checked.png
+    - assets/images/mesange.png
+    - assets/images/guepard.png
