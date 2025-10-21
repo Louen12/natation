@@ -90,6 +90,23 @@ class ExerciseRepository {
 
   Future<void> savePerformance(ExercisePerformance perf) async {
     final db = await _db;
+    
+    // Vérifier si la table existe, sinon la créer
+    try {
+      await db.rawQuery('SELECT 1 FROM exercise_performances LIMIT 1');
+    } catch (e) {
+      // Table n'existe pas, la créer
+      await db.execute('''CREATE TABLE exercise_performances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        exercise_id INTEGER,
+        date TEXT,
+        repetitions INTEGER,
+        duration INTEGER,
+        average_hold_time INTEGER,
+        FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+      );''');
+    }
+    
     await db.insert('exercise_performances', perf.toMap());
   }
 }

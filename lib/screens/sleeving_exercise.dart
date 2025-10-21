@@ -8,8 +8,6 @@ import '../widgets/draggable_nav_bar.dart';
 import '../services/tts_service.dart';
 import '../services/timer_service.dart';
 import '../services/audio_service.dart';
-import '../repositories/sleeving_repository.dart';
-import '../models/sleeving_session.dart';
 
 class SleevingExercisePage extends StatefulWidget {
   const SleevingExercisePage({super.key});
@@ -22,8 +20,7 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   final TTSService _ttsService = TTSService();
   final AudioService _audioService = AudioService();
   final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
-  final SleevingRepository _repository = SleevingRepository();
-
+ 
   final String _exerciseText =
       "Pour cette séance, nous allons faire un GAINAGE LATÉRAL 8 fois. "
       "Commencez en position de planche latérale avec les pieds superposés. "
@@ -134,15 +131,17 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
   }
 
   void _saveSession() async {
-    if (_sessionStartTime != null && _repetitions > 0 && exercise != null) {
-      final averageHoldTime = Duration(
-        milliseconds: _totalSessionTime.inMilliseconds ~/ _repetitions,
-      );
+    if (_sessionStartTime != null && exercise != null) {
+      // Si aucune répétition n'a été complétée, on sauvegarde quand même avec 0 répétitions
+      final repetitionsToSave = _repetitions > 0 ? _repetitions : 1;
+      final averageHoldTime = _repetitions > 0 
+          ? Duration(milliseconds: _totalSessionTime.inMilliseconds ~/ _repetitions)
+          : _totalSessionTime;
 
       final performance = ExercisePerformance(
         exerciseId: exercise!.id,
         date: DateTime.now(),
-        repetitions: _repetitions,
+        repetitions: repetitionsToSave,
         duration: _totalSessionTime,
         averageHoldTime: averageHoldTime,
       );
@@ -150,9 +149,12 @@ class _SleevingExercisePageState extends State<SleevingExercisePage> {
       try {
         await _repo.savePerformance(performance);
         debugPrint('Performance enregistrée *********************************************');
+        debugPrint('Répétitions: $repetitionsToSave, Durée: ${_totalSessionTime.inSeconds}s');
       } catch (e) {
-        debugPrint('Erreur lors de la sauvegarde des performances ************************');
+        debugPrint('Erreur lors de la sauvegarde des performances: $e');
       }
+    } else {
+      debugPrint('Impossible de sauvegarder: sessionStartTime=$_sessionStartTime, exercise=$exercise');
     }
   }
 

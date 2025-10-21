@@ -17,7 +17,7 @@ class ExercisePerformance {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'exercise_id': exerciseId,
       'date': date.toIso8601String(),
       'repetitions': repetitions,
