@@ -1,5 +1,7 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:natation/services/jump_metrics.dart';
 import 'package:natation/services/jump_service.dart';
 import 'package:provider/provider.dart';
 import '../widgets/ExerciseCard.dart';
@@ -16,7 +18,7 @@ class JumpExercisePage extends StatefulWidget {
 class _JumpExercisePageState extends State<JumpExercisePage> {
   final TTSService _ttsService = TTSService();
   final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
-  
+
   final String _exerciseText =
       "Pour cette séance, nous allons faire des SAUTS VERTICAUX. "
       "Sautez aussi haut que possible ! L'application détectera la hauteur, "
@@ -27,7 +29,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   bool _isPlaying = false;
   bool _showInstructions = true;
   bool _isStopped = false;
-  
+
   int _jumpCount = 0;
   double _totalHeight = 0;
   double _totalCalories = 0;
@@ -61,7 +63,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
       _showInstructions = !_isPlaying;
       _isStopped = false; // Réinitialiser l'état d'arrêt
     });
-    
+
     if (_isPlaying) {
       _startExercise();
       _cardKey.currentState?.startTimer();
@@ -83,15 +85,15 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   void _stopExercise() {
     // Arrêter tout
     _ttsService.stop();
-    
+
     // Arrêter le timer de l'ExerciseCard
     _cardKey.currentState?.stopTimer();
-    
+
     // Calculer le temps total au moment de l'arrêt
     if (_sessionStartTime != null) {
       _totalSessionTime = DateTime.now().difference(_sessionStartTime!);
     }
-    
+
     // Mettre à jour l'état
     setState(() {
       _isPlaying = false;
@@ -99,7 +101,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
       _showLeo = false; // Cacher Gros Léo
       _isStopped = true; // Marquer comme arrêté
     });
-    
+
     _showResults();
   }
 
@@ -107,7 +109,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
     final totalMinutes = _totalSessionTime.inMinutes;
     final totalSeconds = _totalSessionTime.inSeconds % 60;
     final formattedTotalTime = '${totalMinutes.toString().padLeft(2, '0')}:${totalSeconds.toString().padLeft(2, '0')}';
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -169,10 +171,10 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
 
   void _reloadExercise() {
     _ttsService.stop(); // Arrêter le TTS
-    
+
     // Réinitialiser le timer de l'ExerciseCard
     _cardKey.currentState?.resetTimer();
-    
+
     setState(() {
       _jumpCount = 0;
       _totalHeight = 0;
@@ -199,7 +201,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
 
     // Text-to-speech selon le nombre de sauts
     _speakMotivation();
-    
+
     // Démarrer le timer pour Gros Léo après 3 sauts
     if (_jumpCount >= 3) {
       Future.delayed(const Duration(seconds: 2), () {
@@ -230,7 +232,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   Widget build(BuildContext context) {
     return ProviderScope(
       child: ChangeNotifierProvider(
-        create: (_) => JumpService()..start(),
+        create: (_) => JumpService(massKg: 72)..start(),
         child: _JumpView(
           cardKey: _cardKey,
           isPlaying: _isPlaying,
@@ -255,14 +257,6 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
       ),
     );
   }
-}
-
-// Juste un wrapper pour ne pas polluer ton arbre avec le provider scope
-class ProviderScope extends StatelessWidget {
-  final Widget child;
-  const ProviderScope({super.key, required this.child});
-  @override
-  Widget build(BuildContext context) => child;
 }
 
 class _JumpView extends StatelessWidget {
@@ -295,6 +289,10 @@ class _JumpView extends StatelessWidget {
     required this.isSpeaking,
     required this.bestTime,
   });
+
+  String _m(double v) => '${v.toStringAsFixed(2)} m';
+
+  String _k(double v) => '${v.toStringAsFixed(2)} kcal';
 
   @override
   Widget build(BuildContext context) {
@@ -489,7 +487,7 @@ class _JumpView extends StatelessWidget {
 
                           if (hasData) {
                             final double airtimeSeconds =
-                                evt!.airTimeMs.inMilliseconds / 1000.0;
+                                evt!.airTime.inMilliseconds / 1000.0;
                             height = (9.81 * pow(airtimeSeconds / 2, 2)) * 100;
                             calories = height * 0.02;
                             power = evt.peakTakeoffG;
