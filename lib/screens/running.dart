@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import 'package:natation/models/exercise.dart';
+import 'package:natation/repositories/exercice_repository.dart';
 
 import '../widgets/running_map.dart';
 import '../widgets/running_controls.dart';
@@ -13,8 +15,9 @@ import '../widgets/vico_header.dart';
 class RunningScreen extends StatefulWidget {
   final double? plannedDistanceMeters;
   final int? maxDurationSeconds;
+  final String title;
 
-  const RunningScreen({super.key, this.plannedDistanceMeters, this.maxDurationSeconds});
+  const RunningScreen({super.key, this.plannedDistanceMeters, this.maxDurationSeconds, required this.title});
 
   @override
   State<RunningScreen> createState() => _RunningScreenState();
@@ -22,6 +25,9 @@ class RunningScreen extends StatefulWidget {
 
 class _RunningScreenState extends State<RunningScreen> {
   // Map & tracking
+
+  final _repo = ExerciseRepository();
+
   final MapController _mapController = MapController();
   StreamSubscription<Position>? _posSub;
   final List<ll.LatLng> _track = [];
@@ -38,6 +44,8 @@ class _RunningScreenState extends State<RunningScreen> {
   // Metrics
   double _distanceMeters = 0.0;
 
+  Exercise? exercise;
+
   // Objectives (defaults if not provided): 5 km in 45 min
   late double _plannedDistanceMeters;
   late int _maxDurationSeconds;
@@ -47,6 +55,20 @@ class _RunningScreenState extends State<RunningScreen> {
     super.initState();
     _initObjectives();
     _ensureLocationReady();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Récupère l'exercice métier passé via Navigator (pour l'id)
+    if (exercise == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Exercise) {
+        exercise = args;
+      } else {
+        debugPrint('Aucun exercice transmis à YogaPage');
+      }
+    }
   }
 
   void _initObjectives() {
@@ -181,6 +203,13 @@ class _RunningScreenState extends State<RunningScreen> {
     final achievedDistance = _distanceMeters >= _plannedDistanceMeters;
     final withinTime = _elapsed.inSeconds <= _maxDurationSeconds;
     final success = achievedDistance && withinTime;
+    
+    final ex = exercise;
+    if (ex != null) {
+      unawaited(_repo.setDone(ex.id, true));
+    } else {
+      debugPrint('Impossible de marquer comme fait: exercise == null');
+    }
 
     if (!mounted) return;
     
