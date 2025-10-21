@@ -45,7 +45,7 @@ class TestVmaHomeScreen extends StatelessWidget {
                   showTimes: false,
                 ),
               ),
-              const SizedBox(height: 20),
+              Expanded(child: const SizedBox(height: 10)),
               Text(
                 "Bienvenue dans le Test VMA 🏃",
                 textAlign: TextAlign.center,
@@ -94,6 +94,7 @@ class TestVmaHomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 300),
             ],
           ),
         ),
