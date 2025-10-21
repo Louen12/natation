@@ -6,6 +6,8 @@ import 'package:natation/screens/result_vma_screen.dart';
 import 'package:natation/screens/test_vma_home_screen.dart';
 import 'package:natation/screens/test_vma_run_screen.dart';
 import 'package:natation/screens/yoga.dart';
+import 'package:natation/screens/training.dart';
+import 'package:natation/screens/running.dart';
 
 void main() {
   runApp(const MainApp());
@@ -21,6 +23,7 @@ class MainApp extends StatelessWidget {
       routes: {
         '/': (context) => const ProgramPage(title: 'Programme'),
         '/yoga': (context) => const YogaPage(title: "Yoga"),
+        '/course': (context) => const RunningScreen(title: "Course"),
         '/vma': (context) => const TestVmaHomeScreen(),
         '/vma_test': (context) => const TestVmaRunScreen(),
         '/history_vma': (context) => const HistoryVmaScreen(),

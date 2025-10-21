@@ -10,11 +10,12 @@ dependencies:
   audioplayers: ^6.5.1
   flutter:
     sdk: flutter
+  flutter_map: ^7.0.2
+  geolocator: ^13.0.1
   sensors_plus: ^5.0.0
   sqflite: ^2.3.3
   path: ^1.9.0
   path_provider: ^2.1.4
-  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
@@ -23,9 +24,19 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
   assets:
+    - assets/images/guepard.png
+    - assets/images/mesange.png
+    - assets/images/giphy.gif
+    - entrainement.json
     - assets/db.json
     - assets/audios/beep.mp3
     - assets/images/checked.png
-    - assets/images/mesange.png
-    - assets/images/guepard.png
+    - assets/images/success.gif
+    - assets/images/clash-royale-boohoo.gif
+
+  fonts:
+    - family: DynaPuff
+      fonts:
+        - asset: fonts/DynaPuff-VariableFont_wdth,wght.ttf
