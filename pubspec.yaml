@@ -30,6 +30,7 @@ flutter:
     - assets/images/mesange.png
     - assets/images/giphy.gif
     - entrainement.json
+    - assets/db.json
     - assets/images/success.gif
     - assets/images/clash-royale-boohoo.gif
 
