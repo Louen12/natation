@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 class VicoHeader extends StatelessWidget {
-  final Duration temps;   // temps de course
-  final double distance;  // distance parcourue en km
+  final Duration temps; // temps de course
+  final double distance; // distance parcourue en km
+  final bool showTimes; // afficher les temps (temps total + temps au km)
 
   const VicoHeader({
     super.key,
     this.temps = Duration.zero,
     this.distance = 0.0,
+    this.showTimes = true,
   });
 
   String _formatDuration(Duration d) {
@@ -33,11 +35,12 @@ class VicoHeader extends StatelessWidget {
       children: [
         // Fond orange
         Padding(
-          padding: const EdgeInsets.fromLTRB(30.0, 50.0, 30.0, 0.0),  // marge de 30 à gauche et à droite
+          padding: const EdgeInsets.fromLTRB(30.0, 50.0, 30.0, 0.0),
+          // marge de 30 à gauche et à droite
           child: CustomPaint(
             painter: HeaderPainter(),
             child: Container(
-              height: 130,
+              height: showTimes ? 130.0 : 75.0,
               width: double.infinity,
             ),
           ),
@@ -48,7 +51,7 @@ class VicoHeader extends StatelessWidget {
           left: 10,
           top: 15,
           child: Image.asset(
-            "maquette/guepard.png",
+            "assets/images/guepard.png",
             height: 110, // plus grand
           ),
         ),
@@ -58,7 +61,7 @@ class VicoHeader extends StatelessWidget {
           right: 0,
           top: 15,
           child: Image.asset(
-            "maquette/mesange.png",
+            "assets/images/mesange.png",
             height: 110, // plus grand
           ),
         ),
@@ -86,17 +89,25 @@ class VicoHeader extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
-
-            // Infos (initialisées à 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _infoWidget(tempsStr, "Temps"),
-                _infoWidget(tempsAuKm, "Temps au km"),
-                _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
-              ],
-            ),
+            // Espacement + bloc d'infos (affichés seulement si showTimes == true)
+            showTimes
+                ? Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _infoWidget(tempsStr, "Temps"),
+                          _infoWidget(tempsAuKm, "Temps au km"),
+                          _infoWidget(
+                            distance.toStringAsFixed(1),
+                            "Distance (km)",
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
           ],
         ),
       ],
@@ -117,10 +128,7 @@ class VicoHeader extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
-            fontFamily: 'DynaPuff',
-            color: Colors.white,
-          ),
+          style: const TextStyle(fontFamily: 'DynaPuff', color: Colors.white),
         ),
       ],
     );
@@ -139,7 +147,7 @@ class HeaderPainter extends CustomPainter {
       ..quadraticBezierTo(size.width, 0, size.width, 20) // arrondi haut droit
       ..lineTo(size.width, size.height - 20)
       ..quadraticBezierTo(size.width, size.height, size.width - 10, size.height)
-      ..lineTo( 5 , size.height)
+      ..lineTo(5, size.height)
       ..lineTo(size.width / 2, size.height + 40) // point en bas
       ..lineTo(size.width - 5, size.height)
       ..lineTo(10, size.height)

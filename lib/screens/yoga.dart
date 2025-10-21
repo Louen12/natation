@@ -10,6 +10,8 @@ import 'package:natation/models/exercise.dart';
 import 'package:natation/repositories/exercice_repository.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import '../widgets/vico_header.dart';
+
 class YogaPositionDto {
   final String name;
   final int timeSeconds; // durée de la position (en secondes)
@@ -325,79 +327,102 @@ class _YogaPageState extends State<YogaPage> {
   Widget build(BuildContext context) {
     final yoga = _yoga;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _loadError != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(_loadError!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Assurez-vous que db.json est déclaré comme asset dans pubspec.yaml.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+      body: Column(
+        children: [
+          const VicoHeader(
+            temps: Duration.zero,
+            distance: 0.0,
+            showTimes: false,
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 36.0, 16.0, 2.0),
+            child: Center(
+              child: Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'DynaPuff',
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
                 ),
-              )
-            : yoga == null
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Positions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildBars(yoga),
-                    const SizedBox(height: 24),
-                    _StatusPanel(
-                      isRunning: _isRunning,
-                      currentPoseName: _currentPoseIndex >= 0
-                          ? yoga.positions[_currentPoseIndex].name
-                          : '-',
-                      remainingSeconds: _remainingInPose,
-                      smoothSeconds: _smoothSeconds,
-                      unsmoothSeconds: _unsmoothSeconds,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _loadError != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: (!_isRunning && !_isCompleted)
-                                ? _startExercise
-                                : null,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Commencer'),
-                          ),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.redAccent,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isRunning ? _finishExercise : null,
-                            icon: const Icon(Icons.stop),
-                            label: const Text('Terminer'),
-                          ),
+                        const SizedBox(height: 12),
+                        Text(_loadError!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Assurez-vous que db.json est déclaré comme asset dans pubspec.yaml.',
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                  )
+                : yoga == null
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Positions',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBars(yoga),
+                        const SizedBox(height: 24),
+                        _StatusPanel(
+                          isRunning: _isRunning,
+                          currentPoseName: _currentPoseIndex >= 0
+                              ? yoga.positions[_currentPoseIndex].name
+                              : '-',
+                          remainingSeconds: _remainingInPose,
+                          smoothSeconds: _smoothSeconds,
+                          unsmoothSeconds: _unsmoothSeconds,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: (!_isRunning && !_isCompleted)
+                                    ? _startExercise
+                                    : null,
+                                icon: const Icon(Icons.play_arrow),
+                                label: const Text('Commencer'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isRunning ? _finishExercise : null,
+                                icon: const Icon(Icons.stop),
+                                label: const Text('Terminer'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
