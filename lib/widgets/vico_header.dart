@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class VicoHeader extends StatelessWidget {
   final Duration temps;   // temps de course
   final double distance;  // distance parcourue en km
+  final bool showTimes;   // afficher les temps (temps total + temps au km)
 
   const VicoHeader({
     super.key,
     this.temps = Duration.zero,
     this.distance = 0.0,
+    this.showTimes = true,
   });
 
   String _formatDuration(Duration d) {
@@ -37,7 +39,7 @@ class VicoHeader extends StatelessWidget {
           child: CustomPaint(
             painter: HeaderPainter(),
             child: Container(
-              height: 130,
+              height: showTimes ? 130.0 :  75.0,
               width: double.infinity,
             ),
           ),
@@ -48,7 +50,7 @@ class VicoHeader extends StatelessWidget {
           left: 10,
           top: 15,
           child: Image.asset(
-            "maquette/guepard.png",
+            "assets/images/guepard.png",
             height: 110, // plus grand
           ),
         ),
@@ -58,7 +60,7 @@ class VicoHeader extends StatelessWidget {
           right: 0,
           top: 15,
           child: Image.asset(
-            "maquette/mesange.png",
+            "assets/images/mesange.png",
             height: 110, // plus grand
           ),
         ),
@@ -86,17 +88,22 @@ class VicoHeader extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
-
-            // Infos (initialisées à 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            // Espacement + bloc d'infos (affichés seulement si showTimes == true)
+            showTimes
+                ? Column(
               children: [
-                _infoWidget(tempsStr, "Temps"),
-                _infoWidget(tempsAuKm, "Temps au km"),
-                _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _infoWidget(tempsStr, "Temps"),
+                    _infoWidget(tempsAuKm, "Temps au km"),
+                    _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
+                  ],
+                ),
               ],
-            ),
+            )
+                : const SizedBox.shrink(),
           ],
         ),
       ],
