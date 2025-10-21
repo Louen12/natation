@@ -1,0 +1,69 @@
+{
+  "bio": {
+    "weight": "40",
+    "size": "1.60"
+  },
+  "exercice": [
+    {
+      "id": 1,
+      "name": "Pompes",
+      "reps": 10,
+      "steps": 3,
+      "rest": "60"
+    },
+    {
+      "id": 7,
+      "name": "Traction",
+      "reps": 15,
+      "steps": 3,
+      "rest": "60"
+    },
+    {
+      "id": 2,
+      "name": "Yoga",
+      "position": [
+        {
+          "name": "Chien tête en bas",
+          "time": "10",
+          "rest": "120"
+        },
+        {
+          "name": "Planche",
+          "time": "10",
+          "rest": "60"
+        },
+        {
+          "name": "Position du lotus",
+          "time": "10",
+          "rest": null
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Course",
+      "distance": "5",
+      "time_objective": "1200"
+    },
+    {
+      "id": 4,
+      "name": "Saut",
+      "duration": "30",
+      "jump_number": 20,
+      "height_objective": 40,
+      "rest": "30"
+    },
+    {
+      "id": 5,
+      "name": "Gainage",
+      "reps": 10,
+      "time": "30",
+      "rest": "30",
+      "type": "planche"
+    },
+    {
+      "id": 6,
+      "name": "Vma"
+    }
+  ]
+}
