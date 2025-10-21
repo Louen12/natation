@@ -44,6 +44,43 @@ class ExerciseRepository {
     );
   }
 
+  /// Récupère un exercice par son ID.
+  Future<Exercise?> getById(int id) async {
+    final db = await _db;
+    final rows = await db.query(
+      'exercises',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Exercise.fromMap(rows.first);
+  }
+
+  /// Récupère un exercice par son Nom
+  Future<Exercise?> getByName(int name) async {
+    final db = await _db;
+    final rows = await db.query(
+      'exercises',
+      where: 'name = ?',
+      whereArgs: [name],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Exercise.fromMap(rows.first);
+  }
+
+  /// Met à jour le statut "réussie" d'un exercice.
+  Future<void> setFailed(int id, bool failed) async {
+    final db = await _db;
+    await db.update(
+      'exercises',
+      {'is_failed': failed ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   /// Réinitialise le statut "fait" de tous les exercices du programme.
   Future<void> resetAllDone() async {
     final db = await _db;

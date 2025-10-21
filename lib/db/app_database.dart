@@ -55,7 +55,8 @@ class AppDatabase {
         height_objective INTEGER,
         time INTEGER,
         type TEXT,
-        is_done INTEGER NOT NULL DEFAULT 0
+        is_done INTEGER NOT NULL DEFAULT 0,
+        is_failed INTEGER NOT NULL DEFAULT 0
       );
     ''');
 
@@ -87,6 +88,9 @@ class AppDatabase {
     if (!hasIsDone) {
       await db.execute(
         'ALTER TABLE exercises ADD COLUMN is_done INTEGER NOT NULL DEFAULT 0;',
+      );
+      await db.execute(
+        'ALTER TABLE exercises ADD COLUMN is_failed INTEGER NOT NULL DEFAULT 0;',
       );
     }
   }

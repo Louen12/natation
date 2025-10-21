@@ -15,6 +15,9 @@ class Exercise {
   final bool? _isDone;
   bool get isDone => _isDone ?? false;
 
+  final bool? _isFailed;
+  bool get isFailed => _isFailed ?? false;
+
   Exercise({
     required this.id,
     required this.name,
@@ -29,7 +32,8 @@ class Exercise {
     this.time,
     this.type,
     bool isDone = false,
-  }) : _isDone = isDone;
+    bool isFailed = false,
+  }) : _isDone = isDone, _isFailed = isFailed;
 
   static int? _toInt(dynamic v) {
     if (v == null) return null;
@@ -73,6 +77,7 @@ class Exercise {
       time: _toInt(json['time']),
       type: json['type']?.toString(),
       isDone: false,
+      isFailed: false
     );
   }
 
@@ -90,6 +95,7 @@ class Exercise {
     'time': time,
     'type': type,
     'is_done': isDone ? 1 : 0,
+    'is_failed': isFailed ? 1 : 0,
   };
 
   factory Exercise.fromMap(Map<String, dynamic> map) => Exercise(
@@ -106,5 +112,6 @@ class Exercise {
     time: map['time'] as int?,
     type: map['type'] as String?,
     isDone: _toBoolDone(map['is_done']),
+    isFailed: _toBoolDone(map['is_failed']),
   );
 }
