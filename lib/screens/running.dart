@@ -11,7 +11,9 @@ import '../widgets/running_map.dart';
 import '../widgets/running_controls.dart';
 import '../services/geo_utils.dart';
 import '../widgets/vico_header.dart';
-
+import 'package:sqflite/sqflite.dart';
+import '../db/app_database.dart';
+import 'package:natation/repositories/run_repository.dart';
 class RunningScreen extends StatefulWidget {
   final double? plannedDistanceMeters;
   final int? maxDurationSeconds;
@@ -26,6 +28,8 @@ class RunningScreen extends StatefulWidget {
 class _RunningScreenState extends State<RunningScreen> {
   // Map & tracking
   final _repo = ExerciseRepository();
+  Future<Database> get _db async => AppDatabase().database;
+
 
   final MapController _mapController = MapController();
   StreamSubscription<Position>? _posSub;
@@ -63,16 +67,45 @@ class _RunningScreenState extends State<RunningScreen> {
     if (exercise == null) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Exercise) {
-        exercise = args;
+        setState(() {
+          exercise = args;
+        });
+        // Charge (ou recharge) les objectifs depuis la BDD maintenant que l'exercice est connu
+        unawaited(_initObjectives());
       } else {
         debugPrint('Aucun exercice transmis à YogaPage');
       }
     }
   }
 
-  void _initObjectives() {
-    _plannedDistanceMeters = exercise?.distance ?? 5000;
-    _maxDurationSeconds = exercise?.duration ?? 45 * 60;
+  Future<void> _initObjectives() async {
+    // Valeurs par défaut si rien en base
+    double plannedMeters = widget.plannedDistanceMeters ?? 5000;
+    int maxSecs = widget.maxDurationSeconds ?? 45 * 60;
+
+    // Tente de récupérer l'exercice depuis la base (comme les autres pages)
+    try {
+      final ex = exercise;
+      if (ex != null) {
+        final fromDb = await _repo.getById(ex.id);
+        final effective = fromDb ?? ex;
+        // distance est stockée en mètres dans l'app (selon usages de RunningControls)
+        if (effective.distance != null) {
+          plannedMeters = effective.distance!;
+        }
+        if (effective.duration != null) {
+          maxSecs = effective.duration!;
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur chargement objectifs depuis la BDD: $e');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _plannedDistanceMeters = plannedMeters;
+      _maxDurationSeconds = maxSecs;
+    });
   }
 
   Future<void> _ensureLocationReady() async {
@@ -202,14 +235,26 @@ class _RunningScreenState extends State<RunningScreen> {
     final achievedDistance = _distanceMeters >= _plannedDistanceMeters;
     final withinTime = _elapsed.inSeconds <= _maxDurationSeconds;
     final success = achievedDistance && withinTime;
+
+    // Sauvegarde du résultat de la course en base
+    try {
+      final exId = exercise?.id;
+      unawaited(RunRepository().insertResult(
+        exerciseId: exId,
+        distanceMeters: _distanceMeters,
+        durationSeconds: _elapsed.inSeconds,
+        success: success,
+      ));
+    } catch (e) {
+      debugPrint('Erreur sauvegarde du résultat de course: $e');
+    }
     
     final ex = exercise;
     if (ex != null) {
       unawaited(_repo.setDone(ex.id, true));
-      if(success){
+      if (success) {
         unawaited(_repo.setFailed(ex.id, false));
-      }
-      else{
+      } else {
         unawaited(_repo.setFailed(ex.id, true));
       }
     } else {
@@ -267,8 +312,6 @@ class _RunningScreenState extends State<RunningScreen> {
               right: 0,
               child: _buildControls(),
             ),
-
-
           ],
         ),
       ),

@@ -83,6 +83,18 @@ class AppDatabase {
             date TEXT
           )
         ''');
+
+    await db.execute('''
+      CREATE TABLE run_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        exercise_id INTEGER,
+        distance_m REAL NOT NULL,
+        duration_s INTEGER NOT NULL,
+        success INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE SET NULL
+      );
+    ''');
   }
 
   /// ajoute la colonne is_done si absente
@@ -102,5 +114,18 @@ class AppDatabase {
         'ALTER TABLE exercises ADD COLUMN is_failed INTEGER NOT NULL DEFAULT 0;',
       );
     }
+
+    // S'assure que la table run_results existe (pour anciens utilisateurs)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS run_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        exercise_id INTEGER,
+        distance_m REAL NOT NULL,
+        duration_s INTEGER NOT NULL,
+        success INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE SET NULL
+      );
+    ''');
   }
 }
