@@ -18,9 +18,9 @@ void main() {
 //   Widget build(BuildContext context) {
 // Création plan personnalisé
 // const customPlan = TractionPlan(
-//   sets: 4,
-//   repsPerSet: 10,
-//   restSeconds: 20,
+  // sets: 4,
+  // repsPerSet: 10,
+  // restSeconds: 20,
 // );
 //     return const MaterialApp(
 //       debugShowCheckedModeBanner: false,
@@ -53,11 +53,14 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: RunResultPage(runSession: testSession),
       initialRoute: '/',
       routes: {
         '/': (context) => const ProgramPage(title: 'Programme'),
         '/yoga': (context) => const YogaPage(title: "Yoga"),
+        '/traction': (context) => const TractionPage(
+              plan: TractionPlan(sets: 3, repsPerSet: 8, restSeconds: 30),
+            ),
+        '/course': (context) => RunResultPage(runSession: testSession),
       },
     );
   }
