@@ -4,6 +4,8 @@ import 'package:natation/models/run_session.dart';
 import 'package:natation/screens/tjtq_result_race.dart';
 import 'screens/traction_page.dart';
 import 'models/traction.dart';
+import 'package:natation/screens/program.dart';
+import 'package:natation/screens/yoga.dart';
 
 void main() {
   runApp(MyApp());
@@ -52,6 +54,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: RunResultPage(runSession: testSession),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const ProgramPage(title: 'Programme'),
+        '/yoga': (context) => const YogaPage(title: "Yoga"),
+      },
     );
   }
 }
