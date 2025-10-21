@@ -104,7 +104,6 @@ class VicoHeader extends StatelessWidget {
                     ],
                   )
                 : const SizedBox.shrink(),
-          ],
             const SizedBox(height: 20),
 
             // Infos (initialisées à 0)
