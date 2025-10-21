@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:natation/screens/jump_exercise.dart';
 import 'package:natation/screens/program.dart';
 import 'package:natation/screens/sleeving_exercise.dart';
 import 'package:natation/screens/yoga.dart';
@@ -17,6 +18,7 @@ class MainApp extends StatelessWidget {
       routes: {
         '/': (context) => const ProgramPage(title: 'Programme'),
         '/yoga': (context) => const YogaPage(title: "Yoga"),
+        '/saut': (context) => const JumpPage(title: "Saut"),
         '/gainage': (context) => const SleevingExercisePage(),
       },
     );
