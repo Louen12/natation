@@ -10,6 +10,8 @@ import 'package:natation/models/exercise.dart';
 import 'package:natation/repositories/exercice_repository.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import '../widgets/vico_header.dart';
+
 class YogaPositionDto {
   final String name;
   final int timeSeconds; // durée de la position (en secondes)
@@ -37,7 +39,6 @@ class YogaPositionDto {
   }
 }
 
-/// DTO représentant l'exercice de yoga (liste des positions)
 class YogaExerciseDto {
   final List<YogaPositionDto> positions;
 
@@ -86,14 +87,10 @@ class YogaPage extends StatefulWidget {
 class _YogaPageState extends State<YogaPage> {
   final _repo = ExerciseRepository();
 
-  /// Exercice métier (pour récupérer l'id, etc.) passé par Navigator
   Exercise? exercise;
-
-  /// Données Yoga (positions) chargées depuis le JSON
   YogaExerciseDto? _yoga;
   String? _loadError;
 
-  // Suivi de l'entraînement
   Timer? _tickTimer;
   StreamSubscription<AccelerometerEvent>? _accelSub;
   AccelerometerEvent? _prevAccel;
@@ -101,15 +98,13 @@ class _YogaPageState extends State<YogaPage> {
   bool _isRunning = false;
   bool _isCompleted = false; // évite les doubles appels
   int _currentPoseIndex = -1;
-  int _remainingInPose = 0; // secondes restantes pour la pose courante
+  int _remainingInPose = 0;
 
-  // Détection de mouvements brusques
   bool _currentSecondAbrupt = false;
   int _smoothSeconds = 0;
   int _unsmoothSeconds = 0;
   int _abruptEvents = 0;
 
-  // Seuil de variation (m/s^2) entre deux échantillons pour considérer un mouvement brusque
   static const double _dvThreshold = 5.0;
 
   bool get _supportsAccelerometer =>
@@ -126,7 +121,6 @@ class _YogaPageState extends State<YogaPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Récupère l'exercice métier passé via Navigator (pour l'id)
     if (exercise == null) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Exercise) {
@@ -164,7 +158,7 @@ class _YogaPageState extends State<YogaPage> {
     final ex = _yoga;
     if (ex == null || ex.positions.isEmpty || _isCompleted) return;
 
-    _stopTracking(); // réinitialise si on relance
+    _stopTracking();
 
     setState(() {
       _isRunning = true;
@@ -204,21 +198,18 @@ class _YogaPageState extends State<YogaPage> {
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!_isRunning) return;
 
-      // Comptabilise la seconde courante selon la douceur du mouvement
       if (_currentSecondAbrupt) {
         _unsmoothSeconds++;
       } else {
         _smoothSeconds++;
       }
-      _currentSecondAbrupt = false; // reset pour la seconde suivante
+      _currentSecondAbrupt = false;
 
-      // Avance le temps de la pose
       setState(() {
         _remainingInPose = math.max(0, _remainingInPose - 1);
       });
 
       if (_remainingInPose <= 0) {
-        // Passe à la pose suivante ou termine
         if (_currentPoseIndex + 1 < ex.positions.length) {
           setState(() {
             _currentPoseIndex++;
@@ -238,9 +229,6 @@ class _YogaPageState extends State<YogaPage> {
     _accelSub = null;
   }
 
-  /// Fin d'exercice (appelée automatiquement ou via bouton "Terminer" ou à la fin du timer).
-  /// Ne bloque pas l'UI, et évite de pop avant d'afficher le résultat.
-  /// Met à jour en BDD le statut "fait" de l'exercice.
   void _finishExercise() {
     if (_isCompleted) return;
     _isCompleted = true;
@@ -253,7 +241,6 @@ class _YogaPageState extends State<YogaPage> {
     final total = _smoothSeconds + _unsmoothSeconds;
     final success = total == 0 ? 0.0 : (_smoothSeconds / total) * 100.0;
 
-    // Met à jour la BDD sans bloquer
     final ex = exercise;
     if (ex != null) {
       unawaited(_repo.setDone(ex.id, true));
@@ -263,7 +250,6 @@ class _YogaPageState extends State<YogaPage> {
 
     if (!mounted) return;
 
-    // Affiche le résultat PUIS retourne à la page précédente en signalant le changement
     showDialog<void>(
       context: context,
       builder: (ctx) {
@@ -292,9 +278,48 @@ class _YogaPageState extends State<YogaPage> {
       },
     ).then((_) {
       if (mounted) {
-        Navigator.pop(context, true); // ProgramPage rafraîchira
+        Navigator.pop(context, true);
       }
     });
+  }
+
+  /// Intercepte toute tentative de quitter la page.
+  Future<bool> _onWillPop() async {
+    // Si pas en cours ou déjà terminé -> autoriser la sortie
+    if (!_isRunning || _isCompleted) return true;
+
+    // Sinon: confirmation
+    final leave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Quitter l\'exercice ?'),
+        content: const Text(
+          'L\'exercice est en cours. Voulez-vous vraiment quitter sans le terminer ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Continuer l\'exercice'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Quitter'),
+          ),
+        ],
+      ),
+    );
+
+    if (leave == true) {
+      // Stoppe les capteurs proprement, ne marque pas "fait".
+      _stopTracking();
+      setState(() {
+        _isRunning = false;
+        _isCompleted = false; // on n’a pas complété, juste quitté
+      });
+      return true; // autorise la sortie
+    }
+    return false; // reste sur la page
   }
 
   String _formatSeconds(int s) {
@@ -324,80 +349,111 @@ class _YogaPageState extends State<YogaPage> {
   @override
   Widget build(BuildContext context) {
     final yoga = _yoga;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _loadError != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(_loadError!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Assurez-vous que db.json est déclaré comme asset dans pubspec.yaml.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              )
-            : yoga == null
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Positions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildBars(yoga),
-                    const SizedBox(height: 24),
-                    _StatusPanel(
-                      isRunning: _isRunning,
-                      currentPoseName: _currentPoseIndex >= 0
-                          ? yoga.positions[_currentPoseIndex].name
-                          : '-',
-                      remainingSeconds: _remainingInPose,
-                      smoothSeconds: _smoothSeconds,
-                      unsmoothSeconds: _unsmoothSeconds,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: (!_isRunning && !_isCompleted)
-                                ? _startExercise
-                                : null,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Commencer'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isRunning ? _finishExercise : null,
-                            icon: const Icon(Icons.stop),
-                            label: const Text('Terminer'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        body: Column(
+          children: [
+            const VicoHeader(
+              temps: Duration.zero,
+              distance: 0.0,
+              showTimes: false,
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 36.0, 16.0, 2.0),
+              child: Center(
+                child: Text(
+                  widget.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'DynaPuff',
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _loadError != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.redAccent,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(_loadError!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Assurez-vous que db.json est déclaré comme asset dans pubspec.yaml.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : yoga == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'Positions',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildBars(yoga),
+                            const SizedBox(height: 24),
+                            _StatusPanel(
+                              isRunning: _isRunning,
+                              currentPoseName: _currentPoseIndex >= 0
+                                  ? yoga.positions[_currentPoseIndex].name
+                                  : '-',
+                              remainingSeconds: _remainingInPose,
+                              smoothSeconds: _smoothSeconds,
+                              unsmoothSeconds: _unsmoothSeconds,
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: (!_isRunning && !_isCompleted)
+                                        ? _startExercise
+                                        : null,
+                                    icon: const Icon(Icons.play_arrow),
+                                    label: const Text('Commencer'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isRunning
+                                        ? _finishExercise
+                                        : null,
+                                    icon: const Icon(Icons.stop),
+                                    label: const Text('Terminer'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

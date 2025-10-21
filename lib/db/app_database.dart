@@ -9,7 +9,7 @@ class AppDatabase {
   factory AppDatabase() => _instance;
 
   static const _dbName = 'fitness.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 3;
 
   Database? _db;
 
@@ -32,7 +32,9 @@ class AppDatabase {
       onCreate: (db, version) async {
         await _createSchema(db);
       },
-      onUpgrade: (db, oldV, newV) async {},
+      onUpgrade: (db, oldV, newV) async {
+        await _updateSchema(db, oldV, newV);
+      },
       onOpen: (db) async {
         await _ensureSchemaCompatibility(db);
       },
@@ -127,5 +129,17 @@ class AppDatabase {
         FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE SET NULL
       );
     ''');
+  }
+
+  Future<void> _updateSchema(Database db, int oldVersion, int newVersion) async {
+    // Implémentez ici les mises à jour de schéma si nécessaire
+    await db.execute('''
+          CREATE TABLE results_vma(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            palier INTEGER,
+            vma REAL,
+            date TEXT
+          );
+        ''');
   }
 }
