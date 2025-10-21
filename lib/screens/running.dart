@@ -285,6 +285,8 @@ class _RunningScreenState extends State<RunningScreen> {
 
   Widget _buildControls() {
     return RunningControls(
+      plannedDistanceMeters: _plannedDistanceMeters,
+      maxDurationSeconds: _maxDurationSeconds,
       running: _running,
       paused: _paused,
       finished: _finished,

@@ -8,6 +8,8 @@ class RunningControls extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onPauseResume;
   final VoidCallback onStop;
+  final double plannedDistanceMeters;
+  final int maxDurationSeconds;
 
   const RunningControls({
     super.key,
@@ -18,6 +20,9 @@ class RunningControls extends StatelessWidget {
     required this.onStart,
     required this.onPauseResume,
     required this.onStop,
+    required this.maxDurationSeconds,
+    required this.plannedDistanceMeters,
+
   });
 
   @override
@@ -44,7 +49,7 @@ class RunningControls extends StatelessWidget {
 
       child: finished
           ? _buildResultView(context)
-          : _buildControlsView(),
+          : _buildControlsView(context),
     );
   }
 
@@ -118,57 +123,75 @@ class RunningControls extends StatelessWidget {
     );
   }
 
-  Widget _buildControlsView() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  Widget _buildControlsView(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          onPressed: running ? onPauseResume : null,
-          icon: Icon(
-            paused ? Icons.play_arrow : Icons.pause,
-            color: Colors.white,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.black,
-            padding: const EdgeInsets.all(20),
-            shape: const CircleBorder(),
-          ),
-        ),
-
-        running
-            ? Container(
-          padding: const EdgeInsets.all(10),
-          decoration: const BoxDecoration(
-            color: Colors.orange,
-            shape: BoxShape.circle,
-          ),
-          child: ClipOval(
-            child: Image.asset(
-              "assets/images/giphy.gif", // ton gif dans assets
-              height: 60,
-              width: 60,
-              fit: BoxFit.cover,
+        if (running)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              "Objectif: ${(plannedDistanceMeters / 1000).toStringAsFixed(2)} km en ${(maxDurationSeconds / 60).toStringAsFixed(0)} min",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
-        )
-            : IconButton(
-          onPressed: onStart,
-          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.orange,
-            padding: const EdgeInsets.all(20),
-            shape: const CircleBorder(),
-          ),
-        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              onPressed: running ? onPauseResume : null,
+              icon: Icon(
+                paused ? Icons.play_arrow : Icons.pause,
+                color: Colors.white,
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.all(20),
+                shape: const CircleBorder(),
+              ),
+            ),
 
-        IconButton(
-          onPressed: running ? onStop : null,
-          icon: const Icon(Icons.stop, color: Colors.white),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.black,
-            padding: const EdgeInsets.all(20),
-            shape: const CircleBorder(),
-          ),
+            running
+                ? Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: Colors.orange,
+                shape: BoxShape.circle,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  "assets/images/giphy.gif", // ton gif dans assets
+                  height: 60,
+                  width: 60,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
+                : IconButton(
+              onPressed: onStart,
+              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.all(20),
+                shape: const CircleBorder(),
+              ),
+            ),
+
+            IconButton(
+              onPressed: running ? onStop : null,
+              icon: const Icon(Icons.stop, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.all(20),
+                shape: const CircleBorder(),
+              ),
+            ),
+          ],
         ),
       ],
     );
