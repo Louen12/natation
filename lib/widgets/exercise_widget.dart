@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:natation/models/exercise.dart';
+import 'package:natation/screens/test_vma_home_screen.dart';
 
 
 class ExerciseWidget extends StatelessWidget {
@@ -34,7 +35,7 @@ class ExerciseWidget extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
-                  builder: (context) => Exercise.getWidgetFromName(exercise),
+                  builder: (context) => TestVmaHomeScreen()
                 ),
               );
             },

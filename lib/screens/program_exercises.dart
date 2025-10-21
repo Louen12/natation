@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:natation/models/exercise.dart';
-import 'package:natation/repositories/exercise_service.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:natation/widgets/vico_header.dart';
 
+import '../services/exercise_api.dart';
 import '../widgets/exercise_widget.dart';
 
 class ProgramExercises extends StatefulWidget {
@@ -23,18 +22,22 @@ class _ProgramExercisesState extends State<ProgramExercises> {
 
   late Future<List<Exercise>> exercisesFuture;
 
+  double _distanceMeters = 0.0;
+  Duration _elapsed = Duration.zero;
+
   @override
   void initState() {
     super.initState();
     exercisesFuture = _initializeDatabaseAndGetExercises();
   }
   Future<List<Exercise>> _initializeDatabaseAndGetExercises() async {
-    var databasesPath = await getDatabasesPath();
+    return ExerciseApi.fetchExercises();
+    /*var databasesPath = await getDatabasesPath();
     String path = join(databasesPath, 'user.db');
     ExerciseProvider userProvider = ExerciseProvider();
     await userProvider.open(path);
     await userProvider.fillDatabase();
-    return userProvider.getAllExercises();
+    return userProvider.getAllExercises();*/
   }
 
   @override
@@ -53,6 +56,13 @@ class _ProgramExercisesState extends State<ProgramExercises> {
               return Column(
                   children: [
                     Text('Programme'),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: VicoHeader(
+                        temps: _elapsed,
+                        distance: _distanceMeters / 1000,
+                      ),
+                    ),
                     Expanded(child:
                       ListView.builder(
                         scrollDirection:  Axis.vertical,
@@ -61,7 +71,7 @@ class _ProgramExercisesState extends State<ProgramExercises> {
                           Exercise exercise = snapshot.data![index];
                           return ExerciseWidget(
                             exercise: exercise,
-                            action: exercise.isFinished
+                            action: exercise.isDone
                           );
                         },
                       ),

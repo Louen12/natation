@@ -51,7 +51,7 @@ class TestVmaHomeScreen extends StatelessWidget {
               const SizedBox(height: 40),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/test_vma_run');
+                  Navigator.pushNamed(context, '/vma_test');
                 },
                 icon: const Icon(Icons.play_arrow, color: Colors.white),
                 label: const Text(

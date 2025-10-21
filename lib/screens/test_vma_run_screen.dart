@@ -6,6 +6,8 @@ import 'package:natation/widgets/bay_speed_indicator.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class TestVmaRunScreen extends StatefulWidget {
+  const TestVmaRunScreen({super.key});
+
   @override
   _TestVmaScreenState createState() => _TestVmaScreenState();
 }
