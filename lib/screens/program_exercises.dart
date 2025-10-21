@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../widgets/exercise_widget.dart';
+import '../widgets/vico_header.dart';
 
 class ProgramExercises extends StatefulWidget {
   const ProgramExercises({Key? key}) : super(key: key);
@@ -37,6 +38,8 @@ class _ProgramExercisesState extends State<ProgramExercises> {
     return userProvider.getAllExercises();
   }
 
+  double _distanceMeters = 0.0;
+  Duration _elapsed = Duration.zero;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,6 +56,13 @@ class _ProgramExercisesState extends State<ProgramExercises> {
               return Column(
                   children: [
                     Text('Programme'),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: VicoHeader(
+                        temps: _elapsed,
+                        distance: _distanceMeters / 1000,
+                      ),
+                    ),
                     Expanded(child:
                       ListView.builder(
                         scrollDirection:  Axis.vertical,
