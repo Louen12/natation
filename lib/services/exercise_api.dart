@@ -19,7 +19,7 @@ class ExerciseApi {
         .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
         .toList();
 
-    // Seeder en BDD uniquement si vide
+    // Seed en BDD les exercies à partir du json
     await _repo.seedIfEmpty(seed);
 
     return _repo.getAll();

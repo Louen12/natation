@@ -225,7 +225,7 @@ class _YogaPageState extends State<YogaPage> {
             _remainingInPose = ex.positions[_currentPoseIndex].timeSeconds;
           });
         } else {
-          _finishExercise(); // fin automatique
+          _finishExercise();
         }
       }
     });
@@ -238,8 +238,9 @@ class _YogaPageState extends State<YogaPage> {
     _accelSub = null;
   }
 
-  /// Fin d'exercice (appelée automatiquement ou via bouton "Terminer").
+  /// Fin d'exercice (appelée automatiquement ou via bouton "Terminer" ou à la fin du timer).
   /// Ne bloque pas l'UI, et évite de pop avant d'afficher le résultat.
+  /// Met à jour en BDD le statut "fait" de l'exercice.
   void _finishExercise() {
     if (_isCompleted) return;
     _isCompleted = true;

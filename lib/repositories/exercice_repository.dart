@@ -5,20 +5,13 @@ import '../models/exercise.dart';
 class ExerciseRepository {
   Future<Database> get _db async => AppDatabase().database;
 
-  Future<void> upsert(Exercise e) async {
-    final db = await _db;
-    await db.insert(
-      'exercises',
-      e.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
+  /// Créer les exercices en base de données uniquement si la table exercises est vide.
   Future<void> seedIfEmpty(List<Exercise> items) async {
     final db = await _db;
-    final cnt = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM exercises'),
-    ) ??
+    final cnt =
+        Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM exercises'),
+        ) ??
         0;
     if (cnt == 0) {
       final batch = db.batch();
@@ -33,35 +26,14 @@ class ExerciseRepository {
     }
   }
 
-  Future<Exercise?> getById(int id) async {
-    final db = await _db;
-    final rows = await db.query(
-      'exercises',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-    if (rows.isEmpty) return null;
-    return Exercise.fromMap(rows.first);
-  }
-
+  /// Récupère tous les exercices.
   Future<List<Exercise>> getAll() async {
     final db = await _db;
     final rows = await db.query('exercises', orderBy: 'id ASC');
     return rows.map((m) => Exercise.fromMap(m)).toList();
   }
 
-  Future<int> deleteById(int id) async {
-    final db = await _db;
-    return db.delete('exercises', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<void> clear() async {
-    final db = await _db;
-    await db.delete('positions');
-    await db.delete('exercises');
-  }
-
+  /// Met à jour le statut "fait" d'un exercice.
   Future<void> setDone(int id, bool done) async {
     final db = await _db;
     await db.update(
@@ -72,6 +44,7 @@ class ExerciseRepository {
     );
   }
 
+  /// Réinitialise le statut "fait" de tous les exercices du programme.
   Future<void> resetAllDone() async {
     final db = await _db;
     await db.update('exercises', {'is_done': 0});
