@@ -35,16 +35,23 @@ class VicoHeader extends StatelessWidget {
       tempsAuKm = _formatDuration(d);
     }
 
+    // Mode visuel : tailles et marges différentes selon showTimes
+    final double topPadding = showTimes ? 50.0 : 8.0;
+    final double containerHeight = showTimes ? 130.0 : 75.0;
+    final double imageTop = showTimes ? 15.0 : 6.0;
+    final double titleTopSpacer = showTimes ? 60.0 : 12.0;
+    final double infoSpacer = showTimes ? 20.0 : 0.0;
+
     return Stack(
       alignment: Alignment.topCenter,
       children: [
         // Fond orange
         Padding(
-          padding: const EdgeInsets.fromLTRB(30.0, 50.0, 30.0, 0.0),
+          padding: EdgeInsets.fromLTRB(30.0, topPadding, 30.0, 0.0),
           child: CustomPaint(
             painter: HeaderPainter(),
             child: Container(
-              height: showTimes ? 130.0 : 75.0,
+              height: containerHeight,
               width: double.infinity,
             ),
           ),
@@ -53,14 +60,14 @@ class VicoHeader extends StatelessWidget {
         // Guépard flottant à gauche
         Positioned(
           left: 10,
-          top: 15,
+          top: imageTop,
           child: Image.asset("assets/images/guepard.png", height: 110),
         ),
 
         // Mésange flottante à droite
         Positioned(
           right: 0,
-          top: 15,
+          top: imageTop,
           child: Image.asset("assets/images/mesange.png", height: 110),
         ),
 
@@ -68,7 +75,7 @@ class VicoHeader extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 60),
+            SizedBox(height: titleTopSpacer),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -85,29 +92,11 @@ class VicoHeader extends StatelessWidget {
                 SizedBox(width: 30),
               ],
             ),
+            // Bloc d'infos (affiché seulement si showTimes == true)
             showTimes
                 ? Column(
                     children: [
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _infoWidgetStatic(tempsStr, "Temps"),
-                          _infoWidgetStatic(tempsAuKm, "Temps au km"),
-                          _infoWidgetStatic(
-                            distance.toStringAsFixed(1),
-                            "Distance (km)",
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-            // Espacement + bloc d'infos (affichés seulement si showTimes == true)
-            showTimes
-                ? Column(
-                    children: [
-                      const SizedBox(height: 20),
+                      SizedBox(height: infoSpacer),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -119,17 +108,6 @@ class VicoHeader extends StatelessWidget {
                     ],
                   )
                 : const SizedBox.shrink(),
-            const SizedBox(height: 20),
-
-            // Infos (initialisées à 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _infoWidget(tempsStr, "Temps"),
-                _infoWidget(tempsAuKm, "Temps au km"),
-                _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
-              ],
-            ),
           ],
         ),
 
@@ -172,6 +150,9 @@ class VicoHeader extends StatelessWidget {
       ],
     );
   }
+
+  // Instance helper kept for backward compatibility
+  Widget _infoWidget(String value, String label) => _infoWidgetStatic(value, label);
 }
 
 class HeaderPainter extends CustomPainter {
