@@ -1,7 +1,5 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:natation/services/jump_metrics.dart';
 import 'package:natation/services/jump_service.dart';
 import 'package:provider/provider.dart';
 import '../widgets/ExerciseCard.dart';
@@ -18,18 +16,14 @@ class JumpExercisePage extends StatefulWidget {
 class _JumpExercisePageState extends State<JumpExercisePage> {
   final TTSService _ttsService = TTSService();
   final GlobalKey<ExerciseCardState> _cardKey = GlobalKey<ExerciseCardState>();
-
+  
   final String _exerciseText =
       "Pour cette séance, nous allons faire des SAUTS VERTICAUX. "
       "Sautez aussi haut que possible ! L'application détectera la hauteur, "
       "la puissance et estimera les calories brûlées.";
 
   bool _isSpeaking = false;
-  bool _showLeo = false;
   bool _isPlaying = false;
-  bool _showInstructions = true;
-  bool _isStopped = false;
-
   int _jumpCount = 0;
   double _totalHeight = 0;
   double _totalCalories = 0;
@@ -60,17 +54,13 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   void _togglePlayPause() {
     setState(() {
       _isPlaying = !_isPlaying;
-      _showInstructions = !_isPlaying;
-      _isStopped = false; // Réinitialiser l'état d'arrêt
     });
-
+    _cardKey.currentState?.toggleTimer();
+    
     if (_isPlaying) {
       _startExercise();
-      _cardKey.currentState?.startTimer();
     } else {
-      // En pause, arrêter tout
       _ttsService.stop();
-      _cardKey.currentState?.stopTimer();
     }
   }
 
@@ -85,23 +75,20 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   void _stopExercise() {
     // Arrêter tout
     _ttsService.stop();
-
+    
     // Arrêter le timer de l'ExerciseCard
     _cardKey.currentState?.stopTimer();
-
+    
     // Calculer le temps total au moment de l'arrêt
     if (_sessionStartTime != null) {
       _totalSessionTime = DateTime.now().difference(_sessionStartTime!);
     }
-
+    
     // Mettre à jour l'état
     setState(() {
       _isPlaying = false;
-      _showInstructions = true;
-      _showLeo = false; // Cacher Gros Léo
-      _isStopped = true; // Marquer comme arrêté
     });
-
+    
     _showResults();
   }
 
@@ -109,7 +96,7 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
     final totalMinutes = _totalSessionTime.inMinutes;
     final totalSeconds = _totalSessionTime.inSeconds % 60;
     final formattedTotalTime = '${totalMinutes.toString().padLeft(2, '0')}:${totalSeconds.toString().padLeft(2, '0')}';
-
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -171,10 +158,10 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
 
   void _reloadExercise() {
     _ttsService.stop(); // Arrêter le TTS
-
+    
     // Réinitialiser le timer de l'ExerciseCard
     _cardKey.currentState?.resetTimer();
-
+    
     setState(() {
       _jumpCount = 0;
       _totalHeight = 0;
@@ -182,9 +169,6 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
       _maxHeight = 0;
       _totalPower = 0;
       _isPlaying = false;
-      _showInstructions = true;
-      _showLeo = false;
-      _isStopped = false; // Réinitialiser l'état d'arrêt
       _sessionStartTime = null;
       _totalSessionTime = Duration.zero;
     });
@@ -201,19 +185,6 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
 
     // Text-to-speech selon le nombre de sauts
     _speakMotivation();
-
-    // Démarrer le timer pour Gros Léo après 3 sauts
-    if (_jumpCount >= 3) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _showLeo = true;
-          });
-          // Gros Léo parle
-          _ttsService.speak("Gros Léo est fier de toi ! Continue comme ça !");
-        }
-      });
-    }
   }
 
   void _speakMotivation() {
@@ -232,14 +203,10 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   Widget build(BuildContext context) {
     return ProviderScope(
       child: ChangeNotifierProvider(
-        create: (_) => JumpService(massKg: 72)..start(),
+        create: (_) => JumpService(massKg: 70.0)..start(),
         child: _JumpView(
           cardKey: _cardKey,
           isPlaying: _isPlaying,
-          showInstructions: _showInstructions,
-          showLeo: _showLeo,
-          isStopped: _isStopped,
-          jumpCount: _jumpCount,
           onJumpDetected: _onJumpDetected,
           onPlayPause: _togglePlayPause,
           onStop: _stopExercise,
@@ -259,13 +226,17 @@ class _JumpExercisePageState extends State<JumpExercisePage> {
   }
 }
 
+// Juste un wrapper pour ne pas polluer ton arbre avec le provider scope
+class ProviderScope extends StatelessWidget {
+  final Widget child;
+  const ProviderScope({super.key, required this.child});
+  @override
+  Widget build(BuildContext context) => child;
+}
+
 class _JumpView extends StatelessWidget {
   final GlobalKey<ExerciseCardState> cardKey;
   final bool isPlaying;
-  final bool showInstructions;
-  final bool showLeo;
-  final bool isStopped;
-  final int jumpCount;
   final Function(double height, double calories, double power)? onJumpDetected;
   final VoidCallback? onPlayPause;
   final VoidCallback? onStop;
@@ -277,10 +248,6 @@ class _JumpView extends StatelessWidget {
   const _JumpView({
     required this.cardKey,
     required this.isPlaying,
-    required this.showInstructions,
-    required this.showLeo,
-    required this.isStopped,
-    required this.jumpCount,
     this.onJumpDetected,
     this.onPlayPause,
     this.onStop,
@@ -289,10 +256,6 @@ class _JumpView extends StatelessWidget {
     required this.isSpeaking,
     required this.bestTime,
   });
-
-  String _m(double v) => '${v.toStringAsFixed(2)} m';
-
-  String _k(double v) => '${v.toStringAsFixed(2)} kcal';
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +277,7 @@ class _JumpView extends StatelessWidget {
                   key: cardKey,
                   title: "NATH A FOND",
                   bestTime: bestTime,
-                  repetitions: jumpCount,
+                  repetitions: service.jumpCount.value,
                   leftImage: "assets/images/fast-cheetah.png",
                   rightImage: "assets/images/bird.png",
                 ),
@@ -323,9 +286,9 @@ class _JumpView extends StatelessWidget {
                   duration: const Duration(milliseconds: 600),
                   switchInCurve: Curves.easeInOut,
                   switchOutCurve: Curves.easeInOut,
-                  child: showInstructions
-                      ? _buildInstructionBlock()
-                      : _buildExerciseVisual(service),
+                  child: isPlaying
+                      ? _buildExerciseVisual(service)
+                      : _buildInstructionBlock(),
                 ),
               ],
             ),
@@ -408,148 +371,87 @@ class _JumpView extends StatelessWidget {
   }
 
   Widget _buildExerciseVisual(JumpService service) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 700),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      child: showLeo
-          ? Column(
-              key: const ValueKey('leoBlock'),
-              children: [
-                const Text(
-                  "Gros Léo est fier de toi !",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'DynaPuff',
-                  ),
-                ),
-                Container(
-                  height: 250,
-                  child: Image.asset(
-                    "assets/images/leo.png",
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
-            )
-          : Stack(
-              key: const ValueKey('exerciseBlock'),
-              children: [
-                // Image de motivation en arrière-plan
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "C'EST MOU ALLEZ !",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'DynaPuff',
-                        ),
-                      ),
-                      Container(
-                        height: 250,
-                        child: Image.asset(
-                          "assets/images/gros.png",
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    return Container(
+      key: const ValueKey('exercise'),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: StreamBuilder<JumpEvent>(
+        stream: service.events,
+        builder: (_, snap) {
+          final hasData = snap.hasData;
+          final evt = snap.data;
+          double height = 0;
+          double calories = 0;
+          double power = 0;
 
-                // Stats en overlay - seulement si pas arrêté
-                if (!isStopped)
-                  Positioned(
-                    top: 20,
-                    left: 20,
-                    right: 20,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: StreamBuilder<JumpEvent>(
-                        stream: service.events,
-                        builder: (_, snap) {
-                          final hasData = snap.hasData;
-                          final evt = snap.data;
-                          double height = 0;
-                          double calories = 0;
-                          double power = 0;
+          if (hasData) {
+            final double airtimeSeconds =
+                evt!.airTime.inMilliseconds / 1000.0;
+            height = (9.81 * pow(airtimeSeconds / 2, 2)) * 100;
+            calories = height * 0.02;
+            power = evt.peakTakeoffG;
 
-                          if (hasData) {
-                            final double airtimeSeconds =
-                                evt!.airTime.inMilliseconds / 1000.0;
-                            height = (9.81 * pow(airtimeSeconds / 2, 2)) * 100;
-                            calories = height * 0.02;
-                            power = evt.peakTakeoffG;
+            // Notifier le saut détecté
+            onJumpDetected?.call(height, calories, power);
+          }
 
-                            // Notifier le saut détecté
-                            onJumpDetected?.call(height, calories, power);
-                          }
-
-                          return Column(
-                            children: [
-                              Text(
-                                'Sauts: $jumpCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              if (hasData) ...[
-                                Text(
-                                  "Hauteur: ${height.toStringAsFixed(1)} cm",
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  "Calories: ${calories.toStringAsFixed(1)} kcal",
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  "Puissance: ${evt!.peakTakeoffG.toStringAsFixed(2)} g",
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ] else
-                                const Text(
-                                  "Prêt à sauter !",
-                                  style: TextStyle(
-                                    color: Colors.orange,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildStatLine(
+                      "Hauteur du saut :",
+                      hasData ? "${height.toStringAsFixed(1)} cm" : "--",
                     ),
-                  ),
-              ],
-            ),
+                    _buildStatLine(
+                      "Calories brûlées :",
+                      hasData ? "${calories.toStringAsFixed(1)} kcal" : "--",
+                    ),
+                    _buildStatLine(
+                      "Nombre de sauts :",
+                      "${service.jumpCount.value}",
+                    ),
+                    _buildStatLine(
+                      "Puissance estimée :",
+                      hasData
+                          ? "${evt!.peakTakeoffG.toStringAsFixed(2)} g"
+                          : "--",
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 800),
+                opacity: hasData ? 1.0 : 0.8,
+                child: Image.asset(
+                  "assets/images/refObscur.png",
+                  height: 220,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
+  Widget _buildStatLine(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        "$label $value",
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontFamily: 'DynaPuff',
+        ),
+      ),
+    );
+  }
 }
