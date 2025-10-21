@@ -268,20 +268,8 @@ class _RunningScreenState extends State<RunningScreen> {
               right: 0,
               child: _buildControls(),
             ),
-            
-            // Flèche de retour en bas à gauche (au-dessus du bloc noir)
-            Positioned(
-              bottom: 120,
-              left: 16,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, size: 32, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withOpacity(0.5),
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-            ),
+
+
           ],
         ),
       ),

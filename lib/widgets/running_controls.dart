@@ -43,18 +43,18 @@ class RunningControls extends StatelessWidget {
       height: finished ? 300 : null, // S'agrandit quand c'est fini
 
       child: finished
-          ? _buildResultView()
+          ? _buildResultView(context)
           : _buildControlsView(),
     );
   }
 
-  Widget _buildResultView() {
-    final gifPath = success 
-        ? "assets/images/success.gif"  // GIF de succès
-        : "assets/images/clash-royale-boohoo.gif";      // GIF d'échec
-    
+  Widget _buildResultView(BuildContext context) {
+    final gifPath = success
+        ? "assets/images/success.gif" // GIF de succès
+        : "assets/images/clash-royale-boohoo.gif"; // GIF d'échec
+
     final message = success ? "GOOD JOB!" : "MAYBE NEXT TIME!";
-    
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -86,15 +86,33 @@ class RunningControls extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        // Bouton pour nouvelle course
-        IconButton(
-          onPressed: onStart,
-          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.orange,
-            padding: const EdgeInsets.all(20),
-            shape: const CircleBorder(),
-          ),
+
+        // Ligne de deux boutons : Rejouer et Accueil
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              onPressed: onStart,
+              icon: const Icon(Icons.replay, color: Colors.white, size: 38),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.all(20),
+                shape: const CircleBorder(),
+              ),
+            ),
+            const SizedBox(width: 20),
+            IconButton(
+              onPressed: () {
+                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              },
+              icon: const Icon(Icons.home, color: Colors.white, size: 32),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.all(20),
+                shape: const CircleBorder(),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -104,54 +122,54 @@ class RunningControls extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-          IconButton(
-            onPressed: running ? onPauseResume : null,
-            icon: Icon(
-              paused ? Icons.play_arrow : Icons.pause,
-              color: Colors.white,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.black,
-              padding: const EdgeInsets.all(20),
-              shape: const CircleBorder(),
-            ),
+        IconButton(
+          onPressed: running ? onPauseResume : null,
+          icon: Icon(
+            paused ? Icons.play_arrow : Icons.pause,
+            color: Colors.white,
           ),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.black,
+            padding: const EdgeInsets.all(20),
+            shape: const CircleBorder(),
+          ),
+        ),
 
-          running
-              ? Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Colors.orange,
-              shape: BoxShape.circle,
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                "assets/images/giphy.gif", // ton gif dans assets
-                height: 60,
-                width: 60,
-                fit: BoxFit.cover,
-              ),
-            ),
-          )
-              : IconButton(
-            onPressed: onStart,
-            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.orange,
-              padding: const EdgeInsets.all(20),
-              shape: const CircleBorder(),
+        running
+            ? Container(
+          padding: const EdgeInsets.all(10),
+          decoration: const BoxDecoration(
+            color: Colors.orange,
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              "assets/images/giphy.gif", // ton gif dans assets
+              height: 60,
+              width: 60,
+              fit: BoxFit.cover,
             ),
           ),
+        )
+            : IconButton(
+          onPressed: onStart,
+          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 38),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.orange,
+            padding: const EdgeInsets.all(20),
+            shape: const CircleBorder(),
+          ),
+        ),
 
-          IconButton(
-            onPressed: running ? onStop : null,
-            icon: const Icon(Icons.stop, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.black,
-              padding: const EdgeInsets.all(20),
-              shape: const CircleBorder(),
-            ),
+        IconButton(
+          onPressed: running ? onStop : null,
+          icon: const Icon(Icons.stop, color: Colors.white),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.black,
+            padding: const EdgeInsets.all(20),
+            shape: const CircleBorder(),
           ),
+        ),
       ],
     );
   }
