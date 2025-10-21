@@ -1,3 +1,7 @@
+import 'package:natation/screens/yoga.dart';
+
+import '../screens/test_vma_home_screen.dart';
+
 class Exercise {
   final int id;
   final String name;
@@ -114,4 +118,23 @@ class Exercise {
     isDone: _toBoolDone(map['is_done']),
     isFailed: _toBoolDone(map['is_failed']),
   );
+
+  static dynamic getWidgetFromName(Exercise exercise){
+    switch(exercise.name){
+      case "Vma":
+        return TestVmaHomeScreen();
+      case "Pompes":
+        return null;
+      case "Traction":
+        return null;
+      case "Yoga":
+        return YogaPage(title: "Yoga");
+      case "Course":
+        return null;
+      case "Saut":
+        return null;
+      case "Gainage":
+        return null;
+    }
+  }
 }

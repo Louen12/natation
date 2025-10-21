@@ -1,6 +1,6 @@
 # natation
 
-## Liste des pages de l'application 
+## Liste des pages de l'application
 
 ### Listing de programmes
 ProgramPage             program.dart
@@ -31,3 +31,14 @@ RuningScreen            running.dart
 ### Résultat de la course
 ResultRace              result-race.dart
 
+
+TEAMVICO :
+- LE GAC Louen
+- LE FLOCH Victor
+- LEBRETON DE VONNE Marc
+- HOGUET Marvin
+
+BAY :
+- ROBERT Adrien
+- FOREST Benjamin
+- MARELLE Yaniss

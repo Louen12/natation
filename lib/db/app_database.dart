@@ -108,6 +108,15 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_positions_exercise_id ON positions(exercise_id);',
     );
+
+    await db.execute('''
+          CREATE TABLE results_vma(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            palier INTEGER,
+            vma REAL,
+            date TEXT
+          )
+        ''');
   }
 
   /// Schéma des séances d’exercices (pompes/tractions)
