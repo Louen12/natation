@@ -207,6 +207,12 @@ class _RunningScreenState extends State<RunningScreen> {
     final ex = exercise;
     if (ex != null) {
       unawaited(_repo.setDone(ex.id, true));
+      if(success){
+        unawaited(_repo.setFailed(ex.id, false));
+      }
+      else{
+        unawaited(_repo.setFailed(ex.id, true));
+      }
     } else {
       debugPrint('Impossible de marquer comme fait: exercise == null');
     }

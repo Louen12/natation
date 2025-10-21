@@ -78,6 +78,7 @@ class _ProgramPageState extends State<ProgramPage> {
                   child: ExercisePill(
                     title: ex.name,
                     completed: ex.isDone,
+                    failed: ex.isFailed
                   ),
                 );
               },
