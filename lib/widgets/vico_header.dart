@@ -88,23 +88,6 @@ class VicoHeader extends StatelessWidget {
               ],
             ),
 
-            // Espacement + bloc d'infos (affichés seulement si showTimes == true)
-            showTimes
-                ? Column(
-              children: [
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _infoWidget(tempsStr, "Temps"),
-                    _infoWidget(tempsAuKm, "Temps au km"),
-                    _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
-                  ],
-                ),
-              ],
-            )
-                : const SizedBox.shrink(),
-            // Espacement + bloc d'infos (affichés seulement si showTimes == true)
             showTimes
                 ? Column(
                     children: [
@@ -121,16 +104,6 @@ class VicoHeader extends StatelessWidget {
                   )
                 : const SizedBox.shrink(),
             const SizedBox(height: 20),
-
-            // Infos (initialisées à 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _infoWidget(tempsStr, "Temps"),
-                _infoWidget(tempsAuKm, "Temps au km"),
-                _infoWidget(distance.toStringAsFixed(1), "Distance (km)"),
-              ],
-            ),
           ],
         ),
       ],
