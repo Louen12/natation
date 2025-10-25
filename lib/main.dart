@@ -10,11 +10,11 @@ import 'package:natation/screens/training.dart';
 import 'package:natation/screens/running.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(MyApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -7,12 +7,16 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
-  audioplayers: ^6.5.1
   flutter:
     sdk: flutter
-  flutter_map: ^7.0.2
+  flutter_riverpod: ^2.5.1
+  shared_preferences: ^2.5.3
+  sensors_plus: ^7.0.0
+  audioplayers: ^6.5.1
+  flutter_tts: ^4.2.3
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
   geolocator: ^13.0.1
-  sensors_plus: ^5.0.0
   sqflite: ^2.3.3
   path: ^1.9.0
   path_provider: ^2.1.4
