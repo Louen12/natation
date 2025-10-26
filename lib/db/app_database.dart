@@ -9,7 +9,7 @@ class AppDatabase {
   factory AppDatabase() => _instance;
 
   static const _dbName = 'fitness.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 6;
 
   Database? _db;
 
@@ -71,6 +71,15 @@ class AppDatabase {
         rest INTEGER,
         FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
       );
+    ''');
+    
+    await db.execute('''
+          CREATE TABLE traction_plans(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sets INTEGER NOT NULL,
+            reps_per_set INTEGER NOT NULL,
+            rest_seconds INTEGER NOT NULL
+          );
     ''');
 
     await db.execute(
