@@ -42,8 +42,15 @@ BAY :
 - ROBERT Adrien
 - FOREST Benjamin
 - MARELLE Yaniss
+
 TEAMVICO :
     - LE GAC Louen
     - LE FLOCH Victor
     - LEBRETON DE VONNE Marc
     - HOGUET Marvin
+
+TJTQ :
+    - GUÉRIN Théo
+    - DEMAI Jules
+    - BIHOREAU Tom
+    - GUILLEMAND Quentin
