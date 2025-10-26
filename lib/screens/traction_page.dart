@@ -535,7 +535,7 @@ class _TractionPageState extends State<TractionPage> {
         builder: (_) => CongratsPopup(
           title: "GOOD JOB!",
           stars: 5,
-          buttonText: "team VICO",
+          buttonText: "TJTQ",
           onClose: () {
             Navigator.pop(context); // ferme le bottom sheet
             _stopTraction();
