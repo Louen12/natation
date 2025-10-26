@@ -10,7 +10,7 @@ class CongratsPopup extends StatelessWidget {
     super.key,
     this.title = "GOOD JOB!",
     this.stars = 4,
-    this.buttonText = "team VICO",
+    this.buttonText = "TJTQ",
     required this.onClose,
   });
 
@@ -40,7 +40,7 @@ class CongratsPopup extends StatelessWidget {
 
           // Image
           Image.asset(
-            "assets/images/success.png",
+            "assets/images/success.gif",
             height: 80,
           ),
           const SizedBox(height: 16),
