@@ -5,6 +5,7 @@ import 'package:natation/screens/program_exercises.dart';
 import 'package:natation/screens/result_vma_screen.dart';
 import 'package:natation/screens/test_vma_home_screen.dart';
 import 'package:natation/screens/test_vma_run_screen.dart';
+import 'package:natation/screens/traction_page.dart';
 import 'package:natation/screens/yoga.dart';
 import 'package:natation/screens/training.dart';
 import 'package:natation/screens/running.dart';
@@ -28,6 +29,8 @@ class MyApp extends StatelessWidget {
         '/vma_test': (context) => const TestVmaRunScreen(),
         '/history_vma': (context) => const HistoryVmaScreen(),
         '/result_vma': (context) => const ResultVmaScreen(),
+        '/traction': (context) => const TractionPage(),
+        '/result_course': (context) => const ResultVmaScreen(), // TODO: change to result_course_screen
       },
     );
   }
