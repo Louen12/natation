@@ -24,8 +24,9 @@ class RunResultPage extends StatelessWidget {
             ),
             children: [
               TileLayer(
-                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                userAgentPackageName: "com.example.app",
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c'],
+                userAgentPackageName: 'com.example.natation',
               ),
               if (parcours.isNotEmpty)
                 PolylineLayer(
@@ -50,10 +51,11 @@ class RunResultPage extends StatelessWidget {
               runSession: runSession,
               // time:
               //     "${runSession.elapsed.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(runSession.elapsed.inSeconds.remainder(60)).toString().padLeft(2, '0')}",
-              // bestTime: "Objectif: ${runSession.maxDurationSeconds ~/ 60}:${(runSession.maxDurationSeconds % 60).toString().padLeft(2, '0')}",
+              // bestTime:
+              //     "Objectif: ${runSession.maxDurationSeconds ~/ 60}:${(runSession.maxDurationSeconds % 60).toString().padLeft(2, '0')}",
               // repetitions: 1,
-              // leftImage: "assets/cheetah.png",
-              // rightImage: "assets/bird.png",
+              leftImage: "assets/images/guepard.png",
+              rightImage: "assets/images/mesange.png",
             ),
           ),
         ],
