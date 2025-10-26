@@ -1,3 +1,4 @@
+import 'package:natation/screens/traction_page.dart';
 import 'package:natation/screens/yoga.dart';
 
 import '../screens/test_vma_home_screen.dart';
@@ -126,7 +127,7 @@ class Exercise {
       case "Pompes":
         return null;
       case "Traction":
-        return null;
+        return TractionPage();
       case "Yoga":
         return YogaPage(title: "Yoga");
       case "Course":

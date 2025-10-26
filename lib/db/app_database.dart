@@ -13,8 +13,8 @@ class AppDatabase {
   AppDatabase._internal();
   factory AppDatabase() => _instance;
 
-  static const String _dbName = 'fitness.db';
-  static const int _dbVersion = 1;
+  static const _dbName = 'fitness.db';
+  static const _dbVersion = 6;
 
   Database? _db;
 
@@ -64,6 +64,9 @@ class AppDatabase {
       onUpgrade: (db, oldV, newV) async {
         // Si un jour _dbVersion augmente, ajouter ici les migrations versionnées.
       },
+      onUpgrade: (db, oldV, newV) async {
+        await _updateSchema(db, oldV, newV);
+      },
       onOpen: (db) async {
         // S’assure que le schéma est compatible (ajouts non destructifs)
         await _ensureSchemaCompatibility(db);
@@ -104,19 +107,19 @@ class AppDatabase {
         FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
       );
     ''');
+    
+    await db.execute('''
+          CREATE TABLE traction_plans(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sets INTEGER NOT NULL,
+            reps_per_set INTEGER NOT NULL,
+            rest_seconds INTEGER NOT NULL
+          );
+    ''');
 
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_positions_exercise_id ON positions(exercise_id);',
     );
-
-    await db.execute('''
-          CREATE TABLE results_vma(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            palier INTEGER,
-            vma REAL,
-            date TEXT
-          )
-        ''');
   }
 
   /// Schéma des séances d’exercices (pompes/tractions)
@@ -173,6 +176,18 @@ class AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_positions_exercise_id ON positions(exercise_id);',
       );
     }
+  }
+
+  Future<void> _updateSchema(Database db, int oldVersion, int newVersion) async {
+    // Implémentez ici les mises à jour de schéma si nécessaire
+    await db.execute('''
+          CREATE TABLE results_vma(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            palier INTEGER,
+            vma REAL,
+            date TEXT
+          );
+        ''');
   }
 }
 

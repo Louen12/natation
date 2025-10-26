@@ -7,7 +7,7 @@ class VmaRepository {
   Future<void> insertResult(int palier, double vma) async {
     final db = await _db;
     await db.insert(
-      'results',
+      'results_vma',
       {
         'palier': palier,
         'vma': vma,
@@ -19,16 +19,16 @@ class VmaRepository {
 
   Future<List<Map<String, dynamic>>> getResults() async {
     final db = await _db;
-    return await db.query('results', orderBy: 'date DESC');
+    return await db.query('results_vma', orderBy: 'date DESC');
   }
 
   Future<void> clearResults() async {
     final db = await _db;
-    await db.delete('results');
+    await db.delete('results_vma');
   }
 
   Future<void> deleteOneResult(int id) async {
     final db = await _db;
-    await db.delete('results', where: 'id = ?', whereArgs: [id]);
+    await db.delete('results_vma', where: 'id = ?', whereArgs: [id]);
   }
 }

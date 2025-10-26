@@ -45,3 +45,7 @@ app.*.map.json
 /android/app/release
 
 /lib/main.dart
+
+/linux/flutter
+/windows/flutter
+/macos/Flutter

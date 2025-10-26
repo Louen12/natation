@@ -5,12 +5,14 @@ class ExercisePill extends StatelessWidget {
   final VoidCallback? onTap;
 
   final bool completed;
+  final bool failed;
 
   const ExercisePill({
     super.key,
     required this.title,
     this.onTap,
     this.completed = false,
+    this.failed = false
   });
 
   @override
@@ -25,13 +27,23 @@ class ExercisePill extends StatelessWidget {
         ? theme.colorScheme.primary.withOpacity(0.20)
         : theme.colorScheme.onSurface.withOpacity(0.15);
 
-    final trailingIcon = completed ? Icons.check_circle : Icons.chevron_right;
+    final trailingIcon = completed
+    ? (failed ? Icons.cancel : Icons.check_circle)
+    : Icons.chevron_right;
 
-    final leadingIcon = completed ? Icons.check : Icons.fitness_center;
+final leadingIcon = completed
+    ? (failed ? Icons.close : Icons.check)
+    : Icons.fitness_center;
 
     final leadingIconColor = completed
-        ? theme.colorScheme.primary
+        ? (failed
+            ? theme.colorScheme.error
+            : theme.colorScheme.primary)
         : theme.colorScheme.onSurface.withOpacity(0.75);
+
+    final textColor = completed
+        ? theme.colorScheme.onSurface.withOpacity(0.5)
+        : theme.colorScheme.onSurface;
 
     return Material(
       color: bgColor,
@@ -60,19 +72,21 @@ class ExercisePill extends StatelessWidget {
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
+                    color: textColor,
                     fontWeight: FontWeight.w600,
                     decoration: completed
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
-                    decorationThickness: completed ? 2 : 1,
+                    decorationThickness: 2,
                   ),
                 ),
               ),
               Icon(
                 trailingIcon,
                 color: completed
-                    ? theme.colorScheme.primary
+                    ? (failed
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.primary)
                     : theme.colorScheme.onSurfaceVariant,
               ),
             ],

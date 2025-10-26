@@ -1,28 +1,31 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../models/traction.dart';
+import '../models/exercise.dart';
+import '../repositories/exercice_repository.dart';
 import '../services/traction_sensor_service.dart';
 import '../widgets/tjtq_circle_button.dart';
 import '../widgets/tjtq_card.dart';
 import '../widgets/tjtq_congrats_popup.dart';
-import '../db/app_database.dart';
 
 /// Machine à états:
 /// idle -> descent -> bottom -> ascent -> rep validée
 enum Phase { idle, descent, bottom, ascent }
 
 /// Page de suivi des tractions.
-/// - Reçoit un [TractionPlan] depuis l'appelant (ex: main.dart).
-/// - Lit un flux capteur via [SensorService] et détecte les répétitions.
-/// - Gère la progression séries/reps, les temps de repos et des annonces vocales TTS.
-/// - Présente une carte visuelle (ExerciseCard) et un contenu défilant en arrière-plan.
+/// - Lit le plan Traction (series/reps/repos) dans assets/entrainement.json
+///   -> pas de repo traction_plans, pas de SQLite
+/// - Récupère aussi l'Exercise "Traction" passé via Navigator pour pouvoir le marquer done.
+/// - Lit le flux capteur via SensorService pour compter les reps.
+/// - Gère séries, repos, annonces TTS, popup "GOOD JOB!" à la fin.
 class TractionPage extends StatefulWidget {
-  final TractionPlan plan;
-
-  const TractionPage({super.key, required this.plan});
+  const TractionPage({super.key});
 
   @override
   State<TractionPage> createState() => _TractionPageState();
@@ -30,11 +33,21 @@ class TractionPage extends StatefulWidget {
 
 class _TractionPageState extends State<TractionPage> {
   // -----------------------
-  // Configuration / Plan
+  // Config / plan
   // -----------------------
 
-  /// Plan de la séance fourni par le parent.
-  late TractionPlan plan;
+  /// Repo global des exercices pour pouvoir setDone(ex.id, true)
+  final _exerciseRepo = ExerciseRepository();
+
+  /// Plan de traction lu depuis le JSON (sets/reps/restSeconds)
+  TractionPlan? plan;
+
+  /// Pendant qu'on charge le JSON au début
+  bool _loadingPlan = true;
+
+  /// L'exercice "Traction" qu'on a passé via Navigator
+  /// (sert juste à marquer done en base quand terminé)
+  Exercise? exercise;
 
   // -----------------------
   // Etat de séance
@@ -42,8 +55,8 @@ class _TractionPageState extends State<TractionPage> {
 
   int currentSet = 1;        // Série en cours (1-based)
   int currentReps = 0;       // Répétitions validées dans la série courante
-  bool inRest = false;       // Indique si on est dans un intervalle de repos
-  int restRemaining = 0;     // Compte à rebours de repos (secondes)
+  bool inRest = false;       // Est-ce qu'on est en repos entre deux séries
+  int restRemaining = 0;     // Compte à rebours du repos (en secondes)
   bool isTractionRunning = false;
 
   // -----------------------
@@ -56,7 +69,7 @@ class _TractionPageState extends State<TractionPage> {
   /// Abonnement au flux capteur.
   StreamSubscription<double>? _sub;
 
-  /// Dernière valeur (utile en debug).
+  /// Dernière valeur brute (debug)
   double val = 0.0;
 
   // -----------------------
@@ -68,46 +81,46 @@ class _TractionPageState extends State<TractionPage> {
   DateTime _tractionStarted = DateTime.now(); // Début de la séance (pour le laxisme)
 
   // Seuils adaptatifs
-  double base = 0.0;      // Ligne de base glissante
-  double ampThresh = 0.6; // Amplitude minimale pour valider une rep
-  double slopeEps = 0.03; // Pente minimale pour compter une tendance
-  double downGate = -0.2; // Seuil directionnel pour déclencher la descente
-  double upGate = 0.2;    // Seuil directionnel pour déclencher la montée
+  double base = 0.0;        // Ligne de base glissante
+  double ampThresh = 0.6;   // Amplitude mini pour valider une rep
+  double slopeEps = 0.03;   // Pente mini pour compter une tendance
+  double downGate = -0.2;   // Seuil directionnel descente
+  double upGate = 0.2;      // Seuil directionnel montée
 
   // Mémoire du cycle courant
-  double minInDescent = 0.0; // Minimum observé en descente
-  double maxInAscent = 0.0;  // Maximum observé en montée
+  double minInDescent = 0.0; // Min observé en descente
+  double maxInAscent = 0.0;  // Max observé en montée
 
-  // Garde-fous anti-doublons
-  static const minBottomHold = Duration(milliseconds: 50); // Tenue minimale en bas
-  static const refractory = Duration(milliseconds: 500);   // Fenêtre réfractaire après rep
-  static const maxPhaseMs = 2500;                          // Timeout de phase
+  // Anti-doublons
+  static const minBottomHold = Duration(milliseconds: 50); // hold bas mini
+  static const refractory    = Duration(milliseconds: 500); // anti double rep
+  static const maxPhaseMs    = 2500; // timeout de phase
   DateTime _bottomAt = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime _lastRep = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime _lastRep  = DateTime.fromMillisecondsSinceEpoch(0);
 
   // -----------------------
-  // Lissage (moyenne glissante) et pente
+  // Lissage / pente
   // -----------------------
 
-  final int _maLen = 3;    // Taille de fenêtre MA
-  final int _slopeLag = 1; // Décalage pour approximer la pente
+  final int _maLen = 3;    // taille fenêtre moving average
+  final int _slopeLag = 1; // décalage pour approximer la pente
   final List<double> _buf = <double>[];
   double _ma = 0.0;
   double _maLagged = 0.0;
 
-  // Streaks de pente (filtrage oscillations)
+  // streak direction (pour filtrer les mini oscillations)
   int _downStreak = 0;
   int _upStreak = 0;
-  int _needStreak = 1; // Nombre minimal d'échantillons consécutifs dans une direction
+  int _needStreak = 1;
 
   // -----------------------
-  // Repos (timer)
+  // Repos
   // -----------------------
 
   Timer? _restTimer;
 
   // -----------------------
-  // Text-to-Speech (TTS)
+  // TTS
   // -----------------------
 
   final FlutterTts _tts = FlutterTts();
@@ -120,8 +133,78 @@ class _TractionPageState extends State<TractionPage> {
   @override
   void initState() {
     super.initState();
-    plan = widget.plan;
-    _initTts();
+    _bootstrap();
+  }
+
+  /// 1. lit le plan Traction dans assets/entrainement.json
+  /// 2. init le TTS
+  /// 3. enlève le loader
+  Future<void> _bootstrap() async {
+    TractionPlan? parsedPlan;
+
+    try {
+      // lis le JSON des exos
+      final raw = await rootBundle.loadString('entrainement.json');
+      final Map<String, dynamic> root = json.decode(raw) as Map<String, dynamic>;
+      final exercices = root['exercice'];
+
+      if (exercices is List) {
+        // on cherche l'objet dont name == "Traction"
+        final tractionEntry = exercices.firstWhere(
+          (e) => e is Map<String, dynamic> && e['name'] == 'Traction',
+          orElse: () => null,
+        );
+
+        if (tractionEntry is Map<String, dynamic>) {
+          int? toInt(dynamic v) {
+            if (v == null) return null;
+            if (v is int) return v;
+            if (v is double) return v.round();
+            if (v is String && v.trim().isNotEmpty) return int.tryParse(v);
+            return null;
+          }
+
+          final sets        = toInt(tractionEntry['steps']) ?? 0; // exemple: 3
+          final repsPerSet  = toInt(tractionEntry['reps']) ?? 0;  // exemple: 15
+          final restSeconds = toInt(tractionEntry['rest']) ?? 0;  // exemple: "60"
+
+          parsedPlan = TractionPlan(
+            id: null,
+            sets: sets,
+            repsPerSet: repsPerSet,
+            restSeconds: restSeconds,
+          );
+        }
+      }
+    } catch (e, st) {
+      debugPrint('[TRACTION] erreur lecture entrainement.json: $e');
+      debugPrint('[TRACTION] stack: $st');
+      parsedPlan = null;
+    }
+
+    plan = parsedPlan;
+
+    await _initTts();
+
+    if (!mounted) return;
+    setState(() {
+      _loadingPlan = false;
+    });
+  }
+
+  /// comme YogaPage : on chope l'Exercise (Traction) passé via Navigator
+  /// pour setDone(ex.id, true) à la fin
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (exercise == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Exercise) {
+        exercise = args;
+      } else {
+        debugPrint('Aucun Exercise passé à TractionPage');
+      }
+    }
   }
 
   @override
@@ -133,7 +216,7 @@ class _TractionPageState extends State<TractionPage> {
   }
 
   // -----------------------
-  // Initialisation TTS
+  // TTS utils
   // -----------------------
 
   Future<void> _initTts() async {
@@ -141,10 +224,10 @@ class _TractionPageState extends State<TractionPage> {
     await _tts.setSpeechRate(0.45);
     await _tts.setPitch(1.0);
     await _tts.setVolume(1.0);
-    // Évite chevauchements
     try {
       await _tts.awaitSpeakCompletion(true);
     } catch (_) {
+      // certains devices crashent sinon, donc on ignore
     }
   }
 
@@ -163,11 +246,12 @@ class _TractionPageState extends State<TractionPage> {
   // Calibration capteur
   // -----------------------
 
-  /// Échantillonne brièvement à l'arrêt pour estimer:
-  /// - base (ligne de base),
-  /// - seuils directionnels (downGate/upGate),
-  /// - amplitude cible (ampThresh),
-  /// en fonction du bruit mesuré (sigma).
+  /// On prend ~800ms d'échantillons quand t'es accroché à la barre sans bouger
+  /// pour estimer:
+  /// - base
+  /// - seuil descente/montée
+  /// - amplitude min
+  /// -> ça rend la détection plus stable
   Future<void> _calibrate() async {
     final samples = <double>[];
     final sub = _sensor.verticalStream().listen(samples.add);
@@ -176,7 +260,10 @@ class _TractionPageState extends State<TractionPage> {
     if (samples.isEmpty) return;
 
     final mu = samples.reduce((a, b) => a + b) / samples.length;
-    final varSum = samples.fold<double>(0.0, (s, v) => s + (v - mu) * (v - mu));
+    final varSum = samples.fold<double>(
+      0.0,
+      (s, v) => s + (v - mu) * (v - mu),
+    );
     final sigma = math.sqrt(varSum / samples.length);
 
     base = mu;
@@ -189,11 +276,11 @@ class _TractionPageState extends State<TractionPage> {
   }
 
   // -----------------------
-  // Laxisme progressif (assouplissement des seuils au démarrage)
+  // Laxisme (début de séance + premières reps)
   // -----------------------
 
-  /// Retourne un facteur k dans [0.5; 1.0] appliqué aux seuils pour faciliter
-  /// les premières répétitions et éviter une rep "perdue" au début.
+  /// plus t'es tôt dans la séance, plus on assouplit les seuils
+  /// => évite de "perdre" les 1ères reps
   double _leniencyScale() {
     final since = DateTime.now().difference(_tractionStarted);
     if (since < const Duration(seconds: 25) && currentReps < 2) return 0.5;
@@ -202,14 +289,13 @@ class _TractionPageState extends State<TractionPage> {
   }
 
   // -----------------------
-  // Contrôles de séance
+  // Contrôle séance
   // -----------------------
 
-  /// Démarre une séance:
-  /// - réinitialise les compteurs,
-  /// - calibre,
-  /// - lance l'écoute capteur.
   Future<void> _startTraction() async {
+    // sécurité: pas de plan => pas de start
+    if (plan == null) return;
+
     setState(() {
       isTractionRunning = true;
       currentSet = 1;
@@ -226,12 +312,7 @@ class _TractionPageState extends State<TractionPage> {
     _startSensor();
   }
 
-  /// Arrête la séance et remet l'état à zéro.
   void _stopTraction() {
-    // Sauvegarde la session si pertinente avant de réinitialiser
-    if (isTractionRunning) {
-      _saveSession(completed: false);
-    }
     _sub?.cancel();
     _restTimer?.cancel();
     setState(() {
@@ -247,7 +328,7 @@ class _TractionPageState extends State<TractionPage> {
   }
 
   // -----------------------
-  // Lissage et pente (MA + moyenne décalée)
+  // Lissage + pente
   // -----------------------
 
   double _updateMA(double v) {
@@ -259,7 +340,9 @@ class _TractionPageState extends State<TractionPage> {
       final int idx = _buf.length - _slopeLag;
       final slice = _buf.sublist(0, idx);
       _maLagged =
-      slice.isEmpty ? _ma : slice.fold<double>(0.0, (s, x) => s + x) / slice.length;
+          slice.isEmpty
+              ? _ma
+              : slice.fold<double>(0.0, (s, x) => s + x) / slice.length;
     } else {
       _maLagged = _ma;
     }
@@ -267,13 +350,13 @@ class _TractionPageState extends State<TractionPage> {
   }
 
   // -----------------------
-  // Ecoute capteur et FSM
+  // FSM capteur
   // -----------------------
 
   void _startSensor() {
     _sub?.cancel();
 
-    // Réinitialisation de la FSM et des buffers
+    // reset FSM
     _phase = Phase.idle;
     _phaseStart = DateTime.now();
     minInDescent = 0;
@@ -283,32 +366,32 @@ class _TractionPageState extends State<TractionPage> {
     _upStreak = 0;
 
     _sub = _sensor.verticalStream().listen((vRaw) {
-      if (inRest) return; // Ignore pendant le repos
+      if (inRest) return; // on ignore le flux si repos
       val = vRaw;
 
-      // Mise à jour lente de la base
+      // base se décale lentement
       base = base * 0.995 + val * 0.005;
 
-      // Lissage et pente
+      // lissage + pente
       final currentMA = _updateMA(val);
       final slope = currentMA - _maLagged;
 
       final now = DateTime.now();
       final dtMs = now.difference(_phaseStart).inMilliseconds;
 
-      // Application du laxisme
+      // laxisme
       final k = _leniencyScale();
       final gDown = downGate * k;
       final gUp = upGate * k;
       final aThresh = ampThresh * k;
       final sEps = slopeEps * k;
 
-      // Fenêtre réfractaire et timeout de phase ajustés au laxisme
+      // durées dynamiques
       final refracMs = (refractory.inMilliseconds * (0.5 + 0.5 * k)).round();
       final refractoryNow = Duration(milliseconds: refracMs);
       final maxPhaseNow = (maxPhaseMs * (1.0 + (1.0 - k))).round();
 
-      // Streaks de pente
+      // streak direction
       if (slope < -sEps) {
         _downStreak++;
         _upStreak = 0;
@@ -320,10 +403,10 @@ class _TractionPageState extends State<TractionPage> {
         _upStreak = 0;
       }
 
-      // Machine à états
+      // FSM
       switch (_phase) {
         case Phase.idle:
-        // Début de descente si passage sous le seuil bas
+          // début descente ?
           if ((currentMA - base) < gDown && _downStreak >= _needStreak) {
             _phase = Phase.descent;
             _phaseStart = now;
@@ -333,10 +416,10 @@ class _TractionPageState extends State<TractionPage> {
           break;
 
         case Phase.descent:
-        // Suivi du minimum pendant la descente
+          // track min
           if (currentMA < minInDescent) minInDescent = currentMA;
 
-          // Passage en bas: inversion de pente (streak up)
+          // bottom ?
           if (_upStreak >= _needStreak) {
             _phase = Phase.bottom;
             _phaseStart = now;
@@ -344,12 +427,12 @@ class _TractionPageState extends State<TractionPage> {
             _upStreak = 0;
           }
 
-          // Sécurité: annule si la phase dure trop longtemps
+          // timeout
           if (dtMs > maxPhaseNow) _resetToIdle(now);
           break;
 
         case Phase.bottom:
-        // Tenue minimale en bas + départ de montée au-dessus du seuil haut
+          // montée ?
           if (now.difference(_bottomAt) >= minBottomHold &&
               (currentMA - base) > gUp &&
               _upStreak >= _needStreak) {
@@ -358,62 +441,66 @@ class _TractionPageState extends State<TractionPage> {
             maxInAscent = currentMA;
             _upStreak = 0;
           }
+
+          // timeout
           if (dtMs > maxPhaseNow) _resetToIdle(now);
           break;
 
         case Phase.ascent:
-        // Suivi du maximum pendant la montée
+          // track max
           if (currentMA > maxInAscent) maxInAscent = currentMA;
 
-          // Fin de montée:
-          // - pente qui repasse à la baisse, ou
-          // - retour sous la moitié du seuil haut
+          // fin montée ?
           final ascentDone =
-              _downStreak >= _needStreak || (currentMA - base) < (gUp * 0.5);
+              _downStreak >= _needStreak ||
+              (currentMA - base) < (gUp * 0.5);
 
           if (ascentDone) {
-            // Amplitude observée sur le cycle courant
+            // amplitude du mouvement
             final amp = (maxInAscent - minInDescent).abs();
 
-            // Seuil "soft" plus indulgent si k < 1.0
+            // tolérance douce pour début de séance
             final softRatio = (k < 1.0) ? 0.40 : 0.60;
             final reachedMain = amp >= aThresh;
             final reachedSoft = amp >= aThresh * softRatio;
 
-            // Anti double-comptage via fenêtre réfractaire
-            final refractoryOk = now.difference(_lastRep) >= refractoryNow;
+            // anti double comptage
+            final refractoryOk =
+                now.difference(_lastRep) >= refractoryNow;
 
-            // Validation de la répétition
+            // rep validée ?
             if ((reachedMain || reachedSoft) && refractoryOk) {
               _lastRep = now;
               setState(() => currentReps++);
 
-              // Adaptation de l'amplitude de référence et de la base
+              // on update nos seuils à partir de ce qu'on a vu
               final target = math.max(ampThresh * 0.85, amp);
               ampThresh = 0.6 * ampThresh + 0.4 * target;
-              base = base * 0.9 + ((minInDescent + maxInAscent) / 2.0) * 0.1;
+              base = base * 0.9 +
+                  ((minInDescent + maxInAscent) / 2.0) * 0.1;
 
-              // Fin de série si quota atteint
-              if (currentReps >= plan.repsPerSet) {
+              // série finie ?
+              if (plan != null &&
+                  currentReps >= plan!.repsPerSet) {
                 _onSetFinished();
                 return;
               }
             }
 
-            // Nouveau cycle
+            // nouveau cycle
             _resetToIdle(now);
           }
 
+          // timeout
           if (dtMs > maxPhaseNow) _resetToIdle(now);
           break;
       }
 
-      // Rafraîchit l'UI (compteurs)
+      // rafraîchir l'UI
       setState(() {});
     });
   }
 
-  /// Remise à zéro de la FSM et des marqueurs de cycle.
   void _resetToIdle(DateTime now) {
     _phase = Phase.idle;
     _phaseStart = now;
@@ -424,14 +511,23 @@ class _TractionPageState extends State<TractionPage> {
   }
 
   /// Fin de série:
-  /// - si dernière série: affiche le popup et annonce la fin de séance,
-  /// - sinon: lance le repos et annonce sa durée.
+  /// - si dernière série => popup GOOD JOB + on marque l'exo comme fait
+  /// - sinon => repos
   void _onSetFinished() {
     _sub?.cancel();
-    if (currentSet >= plan.sets) {
-      // Sauvegarde séance complétée
-      _saveSession(completed: true);
+    if (plan == null) return;
+
+    if (currentSet >= plan!.sets) {
+      // toutes les séries faites -> fin séance
       _speak("Séance terminée. Bravo !");
+
+      final ex = exercise;
+      if (ex != null) {
+        _exerciseRepo.setDone(ex.id, true); // comme Yoga
+      } else {
+        debugPrint("Impossible de marquer Traction comme faite: exercise == null");
+      }
+
       showModalBottomSheet(
         context: context,
         isDismissible: false,
@@ -441,72 +537,40 @@ class _TractionPageState extends State<TractionPage> {
           stars: 5,
           buttonText: "team VICO",
           onClose: () {
-            Navigator.pop(context);
+            Navigator.pop(context); // ferme le bottom sheet
             _stopTraction();
+            Navigator.pop(context, true); // retourne au programme
           },
         ),
       );
     } else {
-      _speak("Série $currentSet terminée. Repos de ${plan.restSeconds} secondes.");
+      // on a encore des séries
+      _speak("Série $currentSet terminée. Repos de ${plan!.restSeconds} secondes.");
       _startRest();
     }
   }
 
-  /// Sauvegarde une séance en base de données.
-  /// completed = true si toutes les séries sont terminées.
-  Future<void> _saveSession({required bool completed}) async {
-    try {
-      // Calcule sets complétés et total de répétitions
-      int completedSets;
-      int totalReps;
-      if (completed) {
-        completedSets = plan.sets;
-        totalReps = plan.sets * plan.repsPerSet;
-      } else {
-        // Série courante éventuellement incomplète
-        final bool currentFinished = inRest || (currentReps >= plan.repsPerSet);
-        completedSets = (currentSet - 1) + (currentFinished ? 1 : 0);
-        final int partialReps = currentFinished ? 0 : currentReps;
-        completedSets = completedSets.clamp(0, plan.sets);
-        totalReps = (completedSets * plan.repsPerSet) + partialReps;
-      }
-
-      if (totalReps <= 0) return; // évite d'enregistrer une séance vide
-
-      final session = ExerciseSession(
-        exerciseType: 'traction',
-        setsPlanned: plan.sets,
-        repsPerSetPlanned: plan.repsPerSet,
-        restSecondsPlanned: plan.restSeconds,
-        setsCompleted: completed ? plan.sets : completedSets,
-        totalReps: totalReps,
-        startedAt: _tractionStarted,
-        endedAt: DateTime.now(),
-        notes: null,
-      );
-      await SessionDao.insert(session);
-    } catch (_) {
-      // On ignore les erreurs silencieusement pour ne pas casser l'UX
-    }
-  }
-
-  /// Démarre le repos entre deux séries avec un compte à rebours.
-  /// Annonce les 3 dernières secondes puis la reprise.
+  /// repos entre deux séries
   void _startRest() {
+    if (plan == null) return;
+
     setState(() {
       inRest = true;
-      restRemaining = plan.restSeconds;
+      restRemaining = plan!.restSeconds;
     });
     _sub?.cancel();
 
     _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       setState(() => restRemaining--);
 
-      // Annonce des 3 dernières secondes
-      if (restRemaining == 3 || restRemaining == 2 || restRemaining == 1) {
+      // annonce vocale 3,2,1
+      if (restRemaining == 3 ||
+          restRemaining == 2 ||
+          restRemaining == 1) {
         _speak("$restRemaining");
       }
 
+      // fin du repos
       if (restRemaining <= 0) {
         t.cancel();
         setState(() {
@@ -528,36 +592,97 @@ class _TractionPageState extends State<TractionPage> {
 
   @override
   Widget build(BuildContext context) {
+    // état 1 : on charge encore le plan du JSON
+    if (_loadingPlan) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // état 2 : chargement fini mais pas de plan trouvé dans le JSON
+    if (plan == null) {
+      debugPrint("[TRACTION] plan est null après lecture du JSON");
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info_outline, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Aucun plan de tractions configuré.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Ajoute 'Traction' dans assets/entrainement.json "
+                    "avec reps / steps / rest.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context); // retour au programme
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text("Retour"),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // état 3 : on a un plan => UI normale d'entraînement
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            // 1) Contenu de fond
+            // fond scrollable (explication exercice)
             Positioned.fill(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20)
-                    .copyWith(top: 320, bottom: 120), // Laisse la place carte et au footer
+                    .copyWith(top: 320, bottom: 120),
                 children: [
                   Text(
-                    "TRACTIONS x${plan.repsPerSet}",
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    "TRACTIONS x${plan!.repsPerSet}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     "Accrochez-vous à la barre, bras tendus. "
-                        "Montez jusqu'à ce que le menton passe au-dessus de la barre "
-                        "puis redescendez doucement.",
+                    "Montez jusqu'à ce que le menton passe au-dessus de la barre "
+                    "puis redescendez doucement.",
                     style: TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 20),
-                  Center(
-                    child: Icon(Icons.fitness_center, size: 120, color: Colors.grey),
+                  const Center(
+                    child: Icon(
+                      Icons.fitness_center,
+                      size: 120,
+                      color: Colors.grey,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   const Text(
                     "Muscles sollicités",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Text(
                     "Dos, biceps, abdominaux",
@@ -568,7 +693,7 @@ class _TractionPageState extends State<TractionPage> {
               ),
             ),
 
-            // 2) Carte d'exercice au-dessus
+            // carte stats séries/reps/repos
             Positioned(
               top: 50,
               left: 0,
@@ -579,15 +704,15 @@ class _TractionPageState extends State<TractionPage> {
                 time: null,
                 repetitions: currentReps,
                 series: currentSet,
-                totalRepetitions: plan.repsPerSet,
-                totalSeries: plan.sets,
+                totalRepetitions: plan!.repsPerSet,
+                totalSeries: plan!.sets,
                 repos: restRemaining,
                 leftImage: "assets/images/guepard.png",
                 rightImage: "assets/images/mesange.png",
               ),
             ),
 
-            // 3) Barre d’actions en bas
+            // barre d'actions en bas
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(

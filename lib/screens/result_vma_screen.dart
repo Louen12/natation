@@ -109,7 +109,7 @@ class ResultVmaScreen extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () async {
                   await VmaRepository().insertResult(palier, vma);
-                  Navigator.popUntil(context, (route) => route.isFirst);
+                  Navigator.pushNamed(context, '/');
                 },
                 icon: const Icon(Icons.home, color: Colors.white),
                 label: const Text(
