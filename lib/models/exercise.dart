@@ -119,22 +119,4 @@ class Exercise {
     isFailed: _toBoolDone(map['is_failed']),
   );
 
-  static dynamic getWidgetFromName(Exercise exercise){
-    switch(exercise.name){
-      case "Vma":
-        return TestVmaHomeScreen();
-      case "Pompes":
-        return null;
-      case "Traction":
-        return null;
-      case "Yoga":
-        return YogaPage(title: "Yoga");
-      case "Course":
-        return null;
-      case "Saut":
-        return null;
-      case "Gainage":
-        return null;
-    }
-  }
 }

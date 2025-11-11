@@ -46,7 +46,7 @@
       "name": "Course",
       "distance": "5",
       "time_objective": "1200",
-      "isDone": true
+      "isDone": false
     },
     {
       "id": 4,

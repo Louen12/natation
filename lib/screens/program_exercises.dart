@@ -13,13 +13,6 @@ class ProgramExercises extends StatefulWidget {
 }
 
 class _ProgramExercisesState extends State<ProgramExercises> {
-  final List<String> activity = <String>['Pompe', 'Traction', 'Abdo'];
-  final List<int> colorCodes = <int>[600, 500, 100];
-
-  final List<int> repetition = <int>[4, 5, 3];
-
-  final List<int> serie = <int>[10, 5, 20];
-
   late Future<List<Exercise>> exercisesFuture;
 
   double _distanceMeters = 0.0;
@@ -32,12 +25,6 @@ class _ProgramExercisesState extends State<ProgramExercises> {
   }
   Future<List<Exercise>> _initializeDatabaseAndGetExercises() async {
     return ExerciseApi.fetchExercises();
-    /*var databasesPath = await getDatabasesPath();
-    String path = join(databasesPath, 'user.db');
-    ExerciseProvider userProvider = ExerciseProvider();
-    await userProvider.open(path);
-    await userProvider.fillDatabase();
-    return userProvider.getAllExercises();*/
   }
 
   @override

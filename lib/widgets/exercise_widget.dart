@@ -32,11 +32,10 @@ class ExerciseWidget extends StatelessWidget {
           !action ?
           ElevatedButton(
             onPressed: () {
-              Navigator.push(
+              Navigator.pushNamed(
                 context,
-                MaterialPageRoute<void>(
-                  builder: (context) => Exercise.getWidgetFromName(exercise)
-                ),
+                "/${(exercise.name).toLowerCase()}",
+                arguments: exercise,
               );
             },
             style: ElevatedButton.styleFrom(
