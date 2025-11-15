@@ -53,7 +53,8 @@ class MyApp extends StatelessWidget {
         '/history_vma': (context) => const HistoryVmaScreen(),
         '/result_vma': (context) => const ResultVmaScreen(),
         '/traction': (context) => const TractionPage(),
-        '/result_course': (context) => const ResultVmaScreen(), // TODO: change to result_course_screen
+        // TODO: Changer par la page d'historique des courses qui ira chercher toutes les sessions et enverra à RunResultPage() l'objet RunSession correspondant
+        '/result_course': (context) => const ResultVmaScreen(),
       },
     );
   }
